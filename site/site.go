@@ -13,6 +13,8 @@ type Site struct {
 func (s *Site) initialize() {
     if !s.initialized {
         s.r = mux.NewRouter()
+
+        s.initialized = true
     }
 }
 

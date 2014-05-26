@@ -9,11 +9,16 @@ import (
 // Main configuration structure
 type Configuration struct {
     PublicDir string `json:"public_dir"`
+    TemplateDir string `json:"template_dir"`
 }
 
 func (c *Configuration) Validate() error {
     if c.PublicDir == "" {
         return errors.New("public_dir cannot be empty")
+    }
+
+    if c.TemplateDir == "" {
+        return errors.New("template_dir cannot be empty")
     }
 
     return nil
