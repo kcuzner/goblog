@@ -49,6 +49,21 @@ func loadConfiguration() {
     }
 }
 
+func SaveConfiguration() {
+    loadConfiguration()
+
+    file, err := os.Open("./goblog.config.json")
+    if err != nil {
+        panic(err)
+    }
+
+    encoder := json.NewEncoder(file)
+    err = encoder.Encode(config)
+    if err != nil {
+        panic(err)
+    }
+}
+
 func GetConfiguration() *Configuration {
     loadConfiguration()
 
