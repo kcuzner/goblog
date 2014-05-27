@@ -6,26 +6,69 @@ import (
 )
 
 type Site struct {
-    initialized bool
     r *mux.Router
 }
 
-func (s *Site) initialize() {
-    if !s.initialized {
-        s.r = mux.NewRouter()
-
-        s.initialized = true
-    }
-}
-
-var site Site
+var site = Site{mux.NewRouter()}
 
 func GetSite() *Site {
-    site.initialize()
     return &site
 }
 
-func init() {
+// Hook to be executed before each request
+type BeforeHook interface {
+    Before(*http.Request)
+}
+
+// Struct for use creating a closure for a BeforeHook
+type BeforeHookImpl struct {
+    BeforeFunc func(*http.Request)
+}
+
+func (h BeforeHookImpl) Before(r *http.Request) { h.BeforeFunc(r) }
+
+// Hook to be executed after each request
+type AfterHook interface {
+    After(*http.Request)
+}
+
+// Struct for use creating a closure for a AfterHook
+type AfterHookImpl struct {
+    AfterFunc func(*http.Request)
+}
+
+func (h AfterHookImpl) After(r *http.Request) { h.AfterFunc(r) }
+
+// Combination type of a before and after hook for ease of use with closures
+type BeforeAfterHookImpl struct {
+    BeforeHookImpl
+    AfterHookImpl
+}
+
+var beforeHooks = make([]BeforeHook, 0)
+var afterHooks = make([]AfterHook, 0)
+
+func RegisterHookBefore(hook BeforeHook) {
+    beforeHooks = append(beforeHooks, hook)
+}
+
+func RegisterHookAfter(hook AfterHook) {
+    afterHooks = append(afterHooks, hook)
+}
+
+func processHooks(w http.ResponseWriter, request *http.Request) {
+    for i := range beforeHooks {
+        beforeHooks[i].Before(request)
+    }
+
     s := GetSite()
-    http.Handle("/", s.r)
+    s.r.ServeHTTP(w, request)
+
+    for i := range afterHooks {
+        afterHooks[i].After(request)
+    }
+}
+
+func init() {
+    http.HandleFunc("/", processHooks)
 }
