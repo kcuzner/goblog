@@ -79,7 +79,8 @@ func NewTemplateCache() (*TemplateCache, error) {
                 return
             }
 
-            if request.Type == getRequest {
+            switch request.Type {
+            case getRequest:
                 template, ok := templates[request.Name]
                 if !ok {
                     log.Println("Template cache: not found ", request.Name)
@@ -93,7 +94,7 @@ func NewTemplateCache() (*TemplateCache, error) {
                 } else {
                     request.Response <- templateResponse{template, nil}
                 }
-            } else if request.Type == refreshRequest {
+            case refreshRequest:
                 log.Println("Template cache: loading ", request.Name)
                 template, err := amber.CompileFile(request.Name, defaultOptions)
                 if err == nil {
@@ -101,7 +102,7 @@ func NewTemplateCache() (*TemplateCache, error) {
                 }
 
                 request.Respond(templateResponse{template, err})
-            } else {
+            default:
                 request.Respond(templateResponse{nil, errors.New("Unknown template request type")})
             }
         }
