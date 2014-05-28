@@ -10,6 +10,9 @@ import (
 type Configuration struct {
     PublicDir string `json:"public_dir"`
     TemplateDir string `json:"template_dir"`
+    GlobalVars struct {
+        SiteTitle string `json:"site_title"`
+    } `json:"global_vars"`
 }
 
 func (c *Configuration) Validate() error {
@@ -19,6 +22,10 @@ func (c *Configuration) Validate() error {
 
     if c.TemplateDir == "" {
         return errors.New("template_dir cannot be empty")
+    }
+
+    if c.GlobalVars.SiteTitle == "" {
+        return errors.New("global_vars.site_title cannot be empty")
     }
 
     return nil

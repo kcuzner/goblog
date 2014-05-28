@@ -74,6 +74,7 @@ func NewTemplateCache() (*TemplateCache, error) {
         var templates = make(map[string]*template.Template)
 
         watchedDirs := make(map[string]bool)
+        watchedDirs[path.Dir(c.TemplateDir)] = true
 
         for {
             request, ok := <- t.requests

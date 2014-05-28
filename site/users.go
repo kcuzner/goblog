@@ -13,7 +13,13 @@ func userLoginGet(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    tmpl.Execute(w, r)
+    tmpl.Execute(w, struct {
+        templates.GlobalVars
+        Test string
+    }{
+        templates.GetGlobalVars(),
+        "stuff",
+    })
 }
 
 func userLoginPost(w http.ResponseWriter, r *http.Request) {
