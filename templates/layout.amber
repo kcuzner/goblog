@@ -1,6 +1,15 @@
 !!!
     head
         title This is sparta!
-        link[href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css", rel="stylesheet"]
+        link[href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"][rel="stylesheet"]
+        link[href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/flatly/bootstrap.min.css"][rel="stylesheet"]
     body
-        block body
+        div.navbar.navbar-default[style="border-radius: 0"]
+            div.container
+                div.navbar-header
+                    a.navbar-brand[href="/"] Projects &amp; Libraries
+                ul.nav.navbar-nav
+                    li
+                        a[href="/"] Home
+        div.container
+            block body

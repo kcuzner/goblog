@@ -1,4 +1,14 @@
 extends ../layout.amber
 
 block body
-    p Hi
+    div.row
+        div.col-sm-4.col-sm-offset-4
+            div.well.well-sm
+                h3 Login
+                form
+                    div.form-group
+                        input.form-control[type="text"][placeholder="Username"][name="username"]
+                    div.form-group
+                        input.form-control[type="password"][placeholder="Password"][name="password"]
+                    div.text-center
+                        button.btn.btn-primary[type="submit"] Log In
