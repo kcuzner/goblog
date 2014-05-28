@@ -66,12 +66,14 @@ func NewTemplateCache() (*TemplateCache, error) {
         }
     }()
 
+    watcher.Watch(c.TemplateDir)
+
     //request events
     go func() {
         defer close(t.requests)
         templates := make(map[string]*template.Template)
 
-        watched := make(map[string]bool)
+        watchedDirs := make(map[string]bool)
 
         for {
             request, ok := <- t.requests
@@ -81,13 +83,16 @@ func NewTemplateCache() (*TemplateCache, error) {
 
             switch request.Type {
             case getRequest:
+                dir := path.Dir(request.Name)
                 template, ok := templates[request.Name]
-                if !ok {
+                if !ok || template == nil {
                     log.Println("Template cache: not found ", request.Name)
+                    //fill in the blank so that it has a space to refresh into
+                    templates[request.Name] = nil
                     //start watching this file
-                    if isWatched, ok := watched[request.Name]; !ok || !isWatched {
-                        watcher.Watch(request.Name)
-                        watched[request.Name] = true
+                    if isWatched, ok := watchedDirs[dir]; !ok || !isWatched {
+                        watcher.Watch(dir)
+                        watchedDirs[dir] = true
                     }
                     //requeue this as a refresh request
                     t.requests <- templateRequest{refreshRequest, request.Name, request.Response}
@@ -95,6 +100,11 @@ func NewTemplateCache() (*TemplateCache, error) {
                     request.Response <- templateResponse{template, nil}
                 }
             case refreshRequest:
+                template, ok := templates[request.Name]
+                if !ok {
+                    request.Respond(templateResponse{nil, errors.New("Refresh for non-used template")})
+                    break
+                }
                 log.Println("Template cache: loading ", request.Name)
                 template, err := amber.CompileFile(request.Name, defaultOptions)
                 if err == nil {
