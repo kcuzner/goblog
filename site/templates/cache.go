@@ -71,7 +71,7 @@ func NewTemplateCache() (*TemplateCache, error) {
     //request events
     go func() {
         defer close(t.requests)
-        templates := make(map[string]*template.Template)
+        var templates = make(map[string]*template.Template)
 
         watchedDirs := make(map[string]bool)
 
@@ -86,7 +86,6 @@ func NewTemplateCache() (*TemplateCache, error) {
                 dir := path.Dir(request.Name)
                 template, ok := templates[request.Name]
                 if !ok || template == nil {
-                    log.Println("Template cache: not found ", request.Name)
                     //fill in the blank so that it has a space to refresh into
                     templates[request.Name] = nil
                     //start watching this file
@@ -94,24 +93,30 @@ func NewTemplateCache() (*TemplateCache, error) {
                         watcher.Watch(dir)
                         watchedDirs[dir] = true
                     }
-                    //requeue this as a refresh request
-                    t.requests <- templateRequest{refreshRequest, request.Name, request.Response}
+                    //load the template
+                    log.Println("Template cache: loading ", request.Name)
+                    template, err := amber.CompileFile(request.Name, defaultOptions)
+                    if err == nil {
+                        templates[request.Name] = template
+                    }
+
+                    request.Respond(templateResponse{template, err})    
                 } else {
-                    request.Response <- templateResponse{template, nil}
+                    request.Respond(templateResponse{template, nil})
                 }
             case refreshRequest:
-                template, ok := templates[request.Name]
+                //see if the template existed
+                _, ok := templates[request.Name]
+                //clear the cache
+                log.Println("Template cache: clearing")
+                templates = make(map[string]*template.Template)
                 if !ok {
                     request.Respond(templateResponse{nil, errors.New("Refresh for non-used template")})
                     break
+                } else {
+                    //requeue this as a get request
+                    t.requests <- templateRequest{getRequest, request.Name, request.Response}
                 }
-                log.Println("Template cache: loading ", request.Name)
-                template, err := amber.CompileFile(request.Name, defaultOptions)
-                if err == nil {
-                    templates[request.Name] = template
-                }
-
-                request.Respond(templateResponse{template, err})
             default:
                 request.Respond(templateResponse{nil, errors.New("Unknown template request type")})
             }
