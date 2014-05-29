@@ -3,6 +3,8 @@ package site
 import (
     "net/http"
     "github.com/gorilla/mux"
+    "labix.org/v2/mgo"
+    "bitbucket.org/kcuzner/goblog/site/config"
 )
 
 type Site struct {
@@ -48,14 +50,17 @@ type BeforeAfterHookImpl struct {
 var beforeHooks = make([]BeforeHook, 0)
 var afterHooks = make([]AfterHook, 0)
 
+// Registers the passed hook to be ran before the request is processed
 func RegisterHookBefore(hook BeforeHook) {
     beforeHooks = append(beforeHooks, hook)
 }
 
+// Registers the passed hook to be ran after the request is processed
 func RegisterHookAfter(hook AfterHook) {
     afterHooks = append(afterHooks, hook)
 }
 
+// Processes the hooks for the passed writer/request combination
 func processHooks(w http.ResponseWriter, request *http.Request) {
     for i := range beforeHooks {
         beforeHooks[i].Before(request)
@@ -67,6 +72,25 @@ func processHooks(w http.ResponseWriter, request *http.Request) {
     for i := range afterHooks {
         afterHooks[i].After(request)
     }
+}
+
+func requireSession() *mgo.Session {
+    c := config.GetConfiguration()
+
+    session, err := mgo.Dial(c.ConnectionString)
+    if err != nil {
+        panic(err)
+    }
+
+    return session
+}
+
+var baseSession = requireSession()
+
+// Gets the Mgo session for the passed request
+// TODO: Change this to have per-session requests
+func GetMgoSession() *mgo.Session {
+    return baseSession
 }
 
 func init() {

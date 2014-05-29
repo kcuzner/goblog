@@ -13,6 +13,7 @@ type Configuration struct {
     GlobalVars struct {
         SiteTitle string `json:"site_title"`
     } `json:"global_vars"`
+    ConnectionString string `json:"connection_string"`
 }
 
 func (c *Configuration) Validate() error {
@@ -26,6 +27,10 @@ func (c *Configuration) Validate() error {
 
     if c.GlobalVars.SiteTitle == "" {
         return errors.New("global_vars.site_title cannot be empty")
+    }
+
+    if c.ConnectionString == "" {
+        return errors.New("connetion_string cannot be empty")
     }
 
     return nil

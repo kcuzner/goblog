@@ -1,12 +1,14 @@
 package site
 
 import (
+    "log"
     "net/http"
     "errors"
     "bytes"
     "crypto/rand"
     "crypto/sha512"
     "labix.org/v2/mgo/bson"
+    "labix.org/v2/mgo"
     "code.google.com/p/go.crypto/pbkdf2"
     "bitbucket.org/kcuzner/goblog/site/templates"
 )
@@ -61,6 +63,28 @@ func (u *User) ValidatePassword(plaintext string) bool {
     return bytes.Equal(u.Password, test)
 }
 
+func getUserCollection() *mgo.Collection {
+    db := GetMgoSession().DB("")
+    return db.C("users")
+}
+
+func GetUser(username string) (*User, error) {
+    var results Users
+    err := getUserCollection().Find(map[string]interface{}{
+        "username": username,
+        }).Limit(1).Iter().All(&results)
+
+    if err != nil {
+        return nil, err
+    }
+
+    if len(results) > 0 {
+        return &results[0], nil
+    }
+
+    return nil, nil
+}
+
 
 // Handles GET /user/login.
 // Simply displays a form
@@ -78,6 +102,22 @@ func userLoginGet(w http.ResponseWriter, r *http.Request) {
 // Handles POST /user/login.
 // Validates the user and possibly sets the session user if everything is valid
 func userLoginPost(w http.ResponseWriter, r *http.Request) {
+    db := GetMgoSession().DB("")
+    users := db.C("users")
+
+    var results Users
+    err := users.Find(map[string]interface{}{
+        "username": "kcuzner",
+        }).Limit(1).Iter().All(&results)
+
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        log.Println(err)
+        return
+    }
+
+    log.Println("Found ", len(results), " users")
+
 
     http.Redirect(w, r, "/user/login", http.StatusFound)
 }
