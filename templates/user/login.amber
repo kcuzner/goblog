@@ -4,8 +4,8 @@ block body
     div.row
         div.col-sm-4.col-sm-offset-4
             div.well.well-sm
-                h3 Login #{Test}
-                form
+                h3 Login
+                form[method="POST"][action="/user/login"]
                     div.form-group
                         input.form-control[type="text"][placeholder="Username"][name="username"]
                     div.form-group
