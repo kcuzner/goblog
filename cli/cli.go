@@ -7,7 +7,7 @@ import (
     //"labix.org/v2/mgo"
     //"github.com/howeyc/gopass"
     //"bitbucket.org/kcuzner/goblog/site/config"
-    //"bitbucket.org/kcuzner/goblog/site"
+    "bitbucket.org/kcuzner/goblog/site"
 )
 
 func main() {
@@ -19,4 +19,6 @@ func main() {
     scanner.Scan()
     username := scanner.Text()
     println(username)
+
+    _ = site.NewRepository()
 }
