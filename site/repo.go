@@ -49,7 +49,7 @@ func NewRepository() *Repository {
     return &repo
 }
 
-func (r *Repository) GetUserRepository() *UserRepository {
+func (r *Repository) Users() *UserRepository {
     if r.users == nil {
         r.users = r.newUserRepository()
     }
@@ -73,7 +73,7 @@ func (r *Repository) newUserRepository() *UserRepository {
 }
 
 // Creates a new user
-func (u *UserRepository) CreateUser(username, password, displayName string) (*User, error) {
+func (u *UserRepository) Create(username, password, displayName string) (*User, error) {
     user := User{}
     user.Id = bson.NewObjectId()
     user.Username = username
@@ -86,7 +86,7 @@ func (u *UserRepository) CreateUser(username, password, displayName string) (*Us
 }
 
 // Gets an existing user
-func (u *UserRepository) GetUser(username string) (*User, error) {
+func (u *UserRepository) User(username string) (*User, error) {
     var results Users
     err := u.c.Find(map[string]interface{}{
         "username": username,

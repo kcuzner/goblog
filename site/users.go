@@ -26,7 +26,7 @@ func userLoginPost(w http.ResponseWriter, r *http.Request) {
     repo := NewRepository()
     defer repo.Close()
 
-    _, err := repo.GetUserRepository().GetUser("kcuzner")
+    _, err := repo.Users().User("kcuzner")
 
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
