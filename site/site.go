@@ -3,6 +3,7 @@ package site
 import (
     "net/http"
     "github.com/gorilla/mux"
+    "github.com/gorilla/sessions"
 )
 
 type Site struct {
@@ -14,6 +15,10 @@ var site = Site{mux.NewRouter()}
 func GetSite() *Site {
     return &site
 }
+
+const MainSessionName = "session"
+
+var store = sessions.NewCookieStore([]byte("Jh!$xPnz6=YeR+N"))
 
 // Hook to be executed before each request
 type BeforeHook interface {

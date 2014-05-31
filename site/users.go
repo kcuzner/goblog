@@ -14,28 +14,64 @@ func userLoginGet(w http.ResponseWriter, r *http.Request) {
 
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
+        log.Println(err)
         return
     }
 
-    tmpl.Execute(w, templates.GetGlobalVars())
-}
+    //the very last thing we do is execute the template
+    var data interface{}
+    defer func(d interface{}) { tmpl.Execute(w, d) }(&data)
 
-// Handles POST /user/login.
-// Validates the user and possibly sets the session user if everything is valid
-func userLoginPost(w http.ResponseWriter, r *http.Request) {
-    repo := NewRepository()
-    defer repo.Close()
-
-    _, err := repo.Users().User("kcuzner")
-
+    session, err := store.Get(r, MainSessionName)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         log.Println(err)
         return
     }
+    defer session.Save(r, w)
 
+    data = templates.GetGlobalVars(session)
+}
 
-    http.Redirect(w, r, "/user/login", http.StatusFound)
+// Handles POST /user/login.
+// Validates the user and possibly sets the session user if everything is valid
+func userLoginPost(w http.ResponseWriter, r *http.Request) {
+    redirectAddr := "/user/login"
+    defer func(addr *string) { http.Redirect(w, r, *addr, http.StatusFound) }(&redirectAddr)
+
+    repo := NewRepository()
+    defer repo.Close()
+
+    session, err := store.Get(r, MainSessionName)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        log.Println(err)
+        return
+    }
+    defer session.Save(r, w)
+
+    username := r.FormValue("username")
+    password := r.FormValue("password")
+
+    if username == "" || password == "" {
+        templates.Flash(session, templates.ErrorFlashKey, "Username and password are required")
+
+    } else {
+        user, err := repo.Users().User(username)
+        if err != nil {
+            w.WriteHeader(http.StatusInternalServerError)
+            log.Println(err)
+            return
+        }
+
+        if user == nil || !user.ValidatePassword(password) {
+            templates.Flash(session, templates.ErrorFlashKey, "Username or password incorrect")
+        } else {
+            templates.Flash(session, templates.SuccessFlashKey, "You have been logged in")
+            redirectAddr = "/"
+            return
+        }
+    }
 }
 
 func init() {

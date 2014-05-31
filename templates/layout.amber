@@ -12,4 +12,13 @@
                     li
                         a[href="/"] Home
         div.container
+            each $msg in Errors
+                div.alert.alert-danger #{$msg}
+            each $msg in Warnings
+                div.alert.alert-warning #{$msg}
+            each $msg in Infos
+                div.alert.alert-info #{$msg}
+            each $msg in Successes
+                div.alert.alert-success #{$msg}
+        div.container
             block body
