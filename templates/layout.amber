@@ -11,6 +11,13 @@
                 ul.nav.navbar-nav
                     li
                         a[href="/"] Home
+                if User
+                    div.navbar-right
+                        p.navbar-text Welcome, #{User.DisplayName}
+                        a.navbar-btn.btn.btn-default[href="/user/logout"] Log Out
+                else
+                    div.navbar-right
+                        a.navbar-btn.btn.btn-default[href="/user/login"] Log In
         div.container
             each $msg in Errors
                 div.alert.alert-danger #{$msg}

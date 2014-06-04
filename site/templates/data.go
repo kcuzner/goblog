@@ -18,6 +18,16 @@ type FlashSource interface {
     Flashes(...string) []interface{}
 }
 
+// Source for a user
+type UserSource interface {
+    User() interface{}
+}
+
+type GlobalVarSource interface {
+    FlashSource
+    UserSource
+}
+
 // Store for flashes compatible with gorrilla sessions
 type FlashStore interface {
     AddFlash(value interface{}, vars ...string)
@@ -27,6 +37,7 @@ type FlashStore interface {
 type GlobalVars struct {
     SiteTitle string
     Errors, Warnings, Infos, Successes []string
+    User interface{}
 }
 
 var configuration = config.GetConfiguration()
@@ -48,11 +59,12 @@ func getFlashes(s FlashSource, key FlashKey) []string {
 }
 
 // Gets the global variables for templates
-func GetGlobalVars(s FlashSource) GlobalVars {
+func GetGlobalVars(s GlobalVarSource) GlobalVars {
     return GlobalVars{configuration.GlobalVars.SiteTitle,
         getFlashes(s, ErrorFlashKey),
         getFlashes(s, WarningFlashKey),
         getFlashes(s, InfoFlashKey),
-        getFlashes(s, SuccessFlashKey)}
+        getFlashes(s, SuccessFlashKey),
+        s.User()}
 }
 

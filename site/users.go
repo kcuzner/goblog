@@ -3,7 +3,6 @@ package site
 import (
     "log"
     "net/http"
-    "github.com/gorilla/context"
     "bitbucket.org/kcuzner/goblog/site/templates"
 )
 
@@ -37,7 +36,14 @@ func userLoginGet(w http.ResponseWriter, r *http.Request) {
     }
     defer session.Save(r, w)
 
-    data = templates.GetGlobalVars(session)
+    vars, err := GetContextVariables(r)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        log.Println(err)
+        return
+    }
+
+    data = templates.GetGlobalVars(vars)
 }
 
 // Handles POST /user/login.
@@ -108,6 +114,11 @@ func userOnBeforeRequest(r *http.Request) {
         return
     }
 
+    vars, err := GetContextVariables(r)
+    if err != nil {
+        return
+    }
+
     val, ok := session.Values["username"]
     if !ok {
         return
@@ -118,8 +129,7 @@ func userOnBeforeRequest(r *http.Request) {
         return
     }
 
-    context.Set(r, UserKey, user)
-    println("User is set")
+    vars.SetUser(user)
 }
 
 func init() {
