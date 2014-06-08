@@ -1,16 +1,7 @@
 package templates
 
 import (
-    "bitbucket.org/kcuzner/goblog/site/config"
-)
-
-type FlashKey string
-
-const (
-    ErrorFlashKey FlashKey = "error"
-    WarningFlashKey = "warning"
-    InfoFlashKey = "info"
-    SuccessFlashKey = "success"
+    "net/http"
 )
 
 // Source for flashes compatible with gorrila sessions
@@ -40,39 +31,25 @@ type GlobalVars struct {
     User interface{}
 }
 
-var configuration = config.GetConfiguration()
+type Vars interface{}
 
-func Flash(s FlashStore, key FlashKey, value string) {
-    s.AddFlash(value, string(key))
-}
-
-func getFlashes(s FlashSource, key FlashKey) []string {
-    inFlashes := s.Flashes(string(key))
-    outFlashes := make([]string, 0)
-    for i := range inFlashes {
-        outFlashes = append(outFlashes, inFlashes[i].(string))
-    }
-
-    println(key, outFlashes)
-
-    return outFlashes
-}
-
-var handlers = make([]func(interface{}) interface{}, 0)
+var handlers = make([]func(*http.Request, Vars) Vars, 0)
 
 // Registers a function which will modify the global vars in some way, generally
 // by adding new members
-func Register(handler func(interface{}) interface{}) {
+func Register(handler func(*http.Request, Vars) Vars) {
     handlers = append(handlers, handler)
 }
 
 // Gets the global variables for templates
-func GetGlobalVars(s GlobalVarSource) interface{} {
-    return GlobalVars{configuration.GlobalVars.SiteTitle,
-        getFlashes(s, ErrorFlashKey),
-        getFlashes(s, WarningFlashKey),
-        getFlashes(s, InfoFlashKey),
-        getFlashes(s, SuccessFlashKey),
-        s.User()}
+// This runs all handlers which have been registered to create global variables.
+// The handlers could run in arbitrary order.
+func GetGlobalVars(r *http.Request) interface{} {
+    var data Vars = struct{}{}
+    for i := range handlers {
+        data = handlers[i](r, data)
+    }
+
+    return data
 }
 

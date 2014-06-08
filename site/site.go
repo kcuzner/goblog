@@ -12,15 +12,23 @@ type Site struct {
     r *mux.Router
 }
 
+func (s *Site) Router() *mux.Router {
+    return s.r
+}
+
 var site = Site{mux.NewRouter()}
 
 func GetSite() *Site {
     return &site
 }
 
-const MainSessionName = "session"
+const mainSessionName = "session"
 
-var Store = sessions.NewCookieStore([]byte("Jh!$xPnz6=YeR+N"))
+var store = sessions.NewCookieStore([]byte("Jh!$xPnz6=YeR+N"))
+
+func Session(r *http.Request) (*sessions.Session, error) {
+    return store.Get(r, mainSessionName)
+}
 
 // Hook to be executed before each request
 type BeforeHook interface {
@@ -83,7 +91,7 @@ func processHooks(w http.ResponseWriter, request *http.Request) {
 // This takes the response writer, request, template name, and a function to
 // execute when the template and session are successfully loaded. The function
 // should return something to be fed into the template's Execute method.
-func RenderTemplate(w http.ResponseWriter, r *http.Request, name string, f func(http.ResponseWriter, *http.Request, templates.GlobalVars) (interface{}, error)) {
+func RenderTemplate(w http.ResponseWriter, r *http.Request, name string, f func(http.ResponseWriter, *http.Request, templates.Vars) (templates.Vars, error)) {
     tmpl, err := templates.Cache.Get(name)
 
     if err != nil {
@@ -98,7 +106,7 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, name string, f func(
     var data interface{}
     defer func(d interface{}) { tmpl.Execute(w, d) }(&data)
 
-    session, err := Store.Get(r, MainSessionName)
+    session, err := Session(r)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         log.Println("renderTemplate:", err)
@@ -106,14 +114,7 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, name string, f func(
     }
     defer session.Save(r, w)
 
-    vars, err := GetContextVariables(r)
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        log.Println("renderTemplate:", err)
-        return
-    }
-
-    data, err = f(w, r, templates.GetGlobalVars(vars))
+    data, err = f(w, r, templates.GetGlobalVars(r))
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         log.Println("renderTemplate:", err)
@@ -121,6 +122,53 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, name string, f func(
     }
 }
 
+type FlashKey string
+
+const (
+    ErrorFlashKey FlashKey = "error"
+    WarningFlashKey = "warning"
+    InfoFlashKey = "info"
+    SuccessFlashKey = "success"
+)
+
+func Flash(s *sessions.Session, key FlashKey, message string) {
+    s.AddFlash(message, string(key))
+}
+
+func getFlashes(r *http.Request, key FlashKey) []string {
+    s, err := Session(r)
+    if err != nil {
+        return nil
+    }
+
+    inFlashes := s.Flashes(string(key))
+    outFlashes := make([]string, 0)
+    for i := range inFlashes {
+        outFlashes = append(outFlashes, inFlashes[i].(string))
+    }
+
+    println(key, outFlashes)
+
+    return outFlashes
+}
+
+func addFlashes(r *http.Request, d templates.Vars) templates.Vars {
+    errors := getFlashes(r, ErrorFlashKey)
+    warnings := getFlashes(r, WarningFlashKey)
+    infos := getFlashes(r, InfoFlashKey)
+    successes := getFlashes(r, SuccessFlashKey)
+
+    return templates.Vars(struct {
+        templates.Vars
+        Errors, Warnings, Infos, Successes []string
+    }{
+        d,
+        errors, warnings, infos, successes,
+    })
+}
+
 func init() {
+    templates.Register(addFlashes)
+
     http.HandleFunc("/", processHooks)
 }

@@ -49,7 +49,7 @@ func init() {
         }
         sort.Sort(FrontPageByOrder(blocks))
 
-        RenderTemplate(w, r, "frontpage", func(w http.ResponseWriter, r *http.Request, d templates.GlobalVars) (interface{}, error) {
+        RenderTemplate(w, r, "frontpage", func(w http.ResponseWriter, r *http.Request, d templates.Vars) (templates.Vars, error) {
             return d, nil})
     }).Name("index")
 }
