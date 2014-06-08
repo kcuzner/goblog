@@ -1,0 +1,7 @@
+extends layout.amber
+
+block body
+    div.row
+        div.col-sm-9
+            block main
+        div.col-sm-3

@@ -42,20 +42,14 @@ func AppendHandler(handler FrontPageHandler) {
 func init() {
     s := GetSite()
 
-    s.r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+    s.r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
         blocks := make([]FrontPageBlock, 0)
         for i := range frontPageHandlers {
-            blocks = append(blocks, frontPageHandlers[i].GetFrontPage(request)...)
+            blocks = append(blocks, frontPageHandlers[i].GetFrontPage(r)...)
         }
         sort.Sort(FrontPageByOrder(blocks))
 
-        tmpl, err := templates.Cache.Get("frontpage")
-
-        if err != nil {
-            writer.WriteHeader(http.StatusInternalServerError)
-            return
-        }
-
-        tmpl.Execute(writer, request)
+        renderTemplate(w, r, "frontpage", func(w http.ResponseWriter, r *http.Request, d templates.GlobalVars) (interface{}, error) {
+            return d, nil})
     }).Name("index")
 }

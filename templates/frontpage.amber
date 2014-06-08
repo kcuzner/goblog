@@ -1,4 +1,4 @@
-extends layout.amber
+extends layout-sidebar.amber
 
 block body
     p Hi!
