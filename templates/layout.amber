@@ -3,6 +3,8 @@
         title #{SiteTitle}
         link[href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"][rel="stylesheet"]
         link[href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/flatly/bootstrap.min.css"][rel="stylesheet"]
+        script[type="text/javascript"][src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"]
+        script[type="text/javascript"][src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"]
     body
         div.navbar.navbar-default[style="border-radius: 0"]
             div.container
@@ -14,7 +16,15 @@
                 if User
                     div.navbar-right
                         p.navbar-text Welcome, #{User.DisplayName}
-                        a.navbar-btn.btn.btn-default[href="/user/logout"] Log Out
+                        ul.navbar-nav.nav
+                            li.dropdown
+                                a.dropdown-toggle[data-toggle="dropdown"][href="#"] Account
+                                    span.caret
+                                ul.dropdown-menu
+                                    li
+                                        a[href="/user/profile"] Profile
+                                        a[href="/user/password"] Change Password
+                                        a[href="/user/logout"] Log Out
                 else
                     div.navbar-right
                         a.navbar-btn.btn.btn-default[href="/user/login"] Log In

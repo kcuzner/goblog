@@ -2,6 +2,8 @@ package site
 
 import (
     "net/http"
+    "log"
+    "bitbucket.org/kcuzner/goblog/site/templates"
     "github.com/gorilla/mux"
     "github.com/gorilla/sessions"
 )
@@ -74,6 +76,48 @@ func processHooks(w http.ResponseWriter, request *http.Request) {
 
     for i := range afterHooks {
         afterHooks[i].After(request)
+    }
+}
+
+// Handles rendering of a specific template and session saving
+// This takes the response writer, request, template name, and a function to
+// execute when the template and session are successfully loaded. The function
+// should return something to be fed into the template's Execute method.
+func renderTemplate(w http.ResponseWriter, r *http.Request, name string, f func(http.ResponseWriter, *http.Request, templates.GlobalVars) (interface{}, error)) {
+    tmpl, err := templates.Cache.Get(name)
+
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        log.Println("renderTemplate:", err)
+        return
+    }
+
+    //the very last thing we do is execute the template
+    //This works because if there is an error, we already write the response
+    //before this deferred execution function is executed
+    var data interface{}
+    defer func(d interface{}) { tmpl.Execute(w, d) }(&data)
+
+    session, err := store.Get(r, MainSessionName)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        log.Println("renderTemplate:", err)
+        return
+    }
+    defer session.Save(r, w)
+
+    vars, err := GetContextVariables(r)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        log.Println("renderTemplate:", err)
+        return
+    }
+
+    data, err = f(w, r, templates.GetGlobalVars(vars))
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        log.Println("renderTemplate:", err)
+        return
     }
 }
 

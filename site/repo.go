@@ -105,7 +105,10 @@ func (u *UserRepository) User(username string) (*User, error) {
 
 // Updates an existing user
 func (u *UserRepository) Update(user *User) error {
-    return nil
+    update := bson.M{
+        "$set": user,
+    }
+    return u.c.UpdateId(user.Id, update)
 }
 
 type (
@@ -128,6 +131,10 @@ func (u *User) getKey(plaintext string) []byte {
 
 // Sets the password for the user, generating a new salt in the process
 func (u *User) SetPassword(plaintext string) error {
+    if plaintext == "" || len(plaintext) < 6 {
+        return errors.New("Password not sufficiently long")
+    }
+
     salt := make([]byte, SaltLength)
     n, err := rand.Read(salt)
     if err != nil {
