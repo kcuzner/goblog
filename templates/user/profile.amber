@@ -1,0 +1,12 @@
+extends ../layout.amber
+
+block body
+    div.row
+        div.col-sm-8.col-sm-offset-2
+            div.well.well-sm
+                form[method="POST"][action="/user/profile"]
+                    div.form-group
+                        label.control-label Display Name
+                        input.form-control[type="text"][placeholder="Display Name"][value=User.DisplayName][name="displayName"]
+                    div.text-center
+                        button.btn.btn-primary[type="submit"] Save Profile

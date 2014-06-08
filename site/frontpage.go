@@ -1,11 +1,9 @@
 package site
 
 import(
-    "path"
     "sort"
     "net/http"
-    "bitbucket.org/kcuzner/goblog/site/config"
-    "github.com/eknkc/amber"
+    "bitbucket.org/kcuzner/goblog/site/templates"
 )
 
 // Block for something to appear on the front page
@@ -39,18 +37,10 @@ func AppendHandler(handler FrontPageHandler) {
     frontPageHandlers = append(getHandlers(), handler)
 }
 
-var defaultOptions = amber.Options{true, false}
+//var defaultOptions = amber.Options{true, false}
 
 func init() {
     s := GetSite()
-
-    c := config.GetConfiguration()
-
-    tmpl, err := amber.CompileFile(path.Join(c.TemplateDir, "frontpage.amber"), defaultOptions)
-
-    if err != nil {
-        panic(err)
-    }
 
     s.r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
         blocks := make([]FrontPageBlock, 0)
@@ -58,6 +48,14 @@ func init() {
             blocks = append(blocks, frontPageHandlers[i].GetFrontPage(request)...)
         }
         sort.Sort(FrontPageByOrder(blocks))
+
+        tmpl, err := templates.Cache.Get("frontpage")
+
+        if err != nil {
+            writer.WriteHeader(http.StatusInternalServerError)
+            return
+        }
+
         tmpl.Execute(writer, request)
     }).Name("index")
 }
