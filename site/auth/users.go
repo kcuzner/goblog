@@ -1,8 +1,10 @@
-package site
+package auth
 
 import (
     "log"
     "net/http"
+    "github.com/gorilla/context"
+    "bitbucket.org/kcuzner/goblog/site"
     "bitbucket.org/kcuzner/goblog/site/templates"
 )
 
@@ -12,11 +14,10 @@ const (
     UserKey UserKeyType = iota
 )
 
-
 // Handles GET /user/login.
 // Simply displays a form
 func userLoginGet(w http.ResponseWriter, r *http.Request) {
-    renderTemplate(w, r, "user/login", func(w http.ResponseWriter, r *http.Request, d templates.GlobalVars) (interface{}, error) {
+    site.RenderTemplate(w, r, "user/login", func(w http.ResponseWriter, r *http.Request, d templates.GlobalVars) (interface{}, error) {
         return d, nil})
 }
 
@@ -26,9 +27,6 @@ func userLoginPost(w http.ResponseWriter, r *http.Request) {
     //the very last thing we do is redirect to somewhere (set by redirectAddr)
     redirectAddr := "/user/login"
     defer func(addr *string) { http.Redirect(w, r, *addr, http.StatusFound) }(&redirectAddr)
-
-    repo := NewRepository()
-    defer repo.Close()
 
     session, err := store.Get(r, MainSessionName)
     if err != nil {
@@ -79,7 +77,7 @@ func userLogoutGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func userProfileGet(w http.ResponseWriter, r *http.Request) {
-    renderTemplate(w, r, "user/profile", func(w http.ResponseWriter, r *http.Request, d templates.GlobalVars) (interface{}, error) {
+    site.RenderTemplate(w, r, "user/profile", func(w http.ResponseWriter, r *http.Request, d templates.GlobalVars) (interface{}, error) {
         return d, nil})
 }
 
@@ -119,7 +117,7 @@ func userProfilePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func userPasswordGet(w http.ResponseWriter, r *http.Request) {
-    renderTemplate(w, r, "user/password", func(w http.ResponseWriter, r *http.Request, d templates.GlobalVars) (interface{}, error) {
+    site.RenderTemplate(w, r, "user/password", func(w http.ResponseWriter, r *http.Request, d templates.GlobalVars) (interface{}, error) {
         return d, nil})
 }
 
@@ -171,6 +169,11 @@ func userPasswordPost(w http.ResponseWriter, r *http.Request) {
     templates.Flash(session, templates.SuccessFlashKey, "Password has been changed")
 }
 
+func UserFor(r *http.Request) *User {
+    user, ok := context.GetOk(r, UserKey)
+    return user.(*User)
+}
+
 // to be executed before each request to set some global variables that will be helpful in templates
 func userOnBeforeRequest(r *http.Request) {
     repo := NewRepository()
@@ -191,18 +194,19 @@ func userOnBeforeRequest(r *http.Request) {
         return
     }
 
-    user, err := repo.Users().User(val.(string))
+    user := new(User)
+    err := db.Current.Find(user, bson.M{"username": val.(string)}).One(&user)
     if err != nil || user == nil {
         return
     }
-
-    vars.SetUser(user)
+    context.Set(r, UserKey, user)
 }
 
 func init() {
-    RegisterHookBefore(BeforeHookImpl{userOnBeforeRequest})
+    db.Register(User{})
+    site.RegisterHookBefore(BeforeHookImpl{userOnBeforeRequest})
 
-    s := GetSite()
+    s := site.GetSite()
 
     sr := s.r.PathPrefix("/user").Subrouter()
 

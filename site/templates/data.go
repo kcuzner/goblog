@@ -58,8 +58,16 @@ func getFlashes(s FlashSource, key FlashKey) []string {
     return outFlashes
 }
 
+var handlers = make([]func(interface{}) interface{}, 0)
+
+// Registers a function which will modify the global vars in some way, generally
+// by adding new members
+func Register(handler func(interface{}) interface{}) {
+    handlers = append(handlers, handler)
+}
+
 // Gets the global variables for templates
-func GetGlobalVars(s GlobalVarSource) GlobalVars {
+func GetGlobalVars(s GlobalVarSource) interface{} {
     return GlobalVars{configuration.GlobalVars.SiteTitle,
         getFlashes(s, ErrorFlashKey),
         getFlashes(s, WarningFlashKey),

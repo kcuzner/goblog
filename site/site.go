@@ -20,7 +20,7 @@ func GetSite() *Site {
 
 const MainSessionName = "session"
 
-var store = sessions.NewCookieStore([]byte("Jh!$xPnz6=YeR+N"))
+var Store = sessions.NewCookieStore([]byte("Jh!$xPnz6=YeR+N"))
 
 // Hook to be executed before each request
 type BeforeHook interface {
@@ -83,7 +83,7 @@ func processHooks(w http.ResponseWriter, request *http.Request) {
 // This takes the response writer, request, template name, and a function to
 // execute when the template and session are successfully loaded. The function
 // should return something to be fed into the template's Execute method.
-func renderTemplate(w http.ResponseWriter, r *http.Request, name string, f func(http.ResponseWriter, *http.Request, templates.GlobalVars) (interface{}, error)) {
+func RenderTemplate(w http.ResponseWriter, r *http.Request, name string, f func(http.ResponseWriter, *http.Request, templates.GlobalVars) (interface{}, error)) {
     tmpl, err := templates.Cache.Get(name)
 
     if err != nil {
@@ -98,7 +98,7 @@ func renderTemplate(w http.ResponseWriter, r *http.Request, name string, f func(
     var data interface{}
     defer func(d interface{}) { tmpl.Execute(w, d) }(&data)
 
-    session, err := store.Get(r, MainSessionName)
+    session, err := Store.Get(r, MainSessionName)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         log.Println("renderTemplate:", err)

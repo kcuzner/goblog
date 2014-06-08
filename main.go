@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "net/http"
+    _ "bitbucket.org/kcuzner/goblog/site/auth"
     _ "bitbucket.org/kcuzner/goblog/site"
     "bitbucket.org/kcuzner/goblog/site/config"
 )
