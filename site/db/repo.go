@@ -28,7 +28,7 @@ type repository struct {
 }
 
 func requireSession() *mgo.Session {
-    c := config.GetConfiguration()
+    c := config.Config
 
     session, err := mgo.Dial(c.ConnectionString)
     if err != nil {

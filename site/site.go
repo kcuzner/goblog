@@ -4,6 +4,7 @@ import (
     "net/http"
     "log"
     "bitbucket.org/kcuzner/goblog/site/templates"
+    "bitbucket.org/kcuzner/goblog/site/config"
     "github.com/gorilla/mux"
     "github.com/gorilla/sessions"
 )
@@ -104,7 +105,7 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, name string, f func(
     //This works because if there is an error, we already write the response
     //before this deferred execution function is executed
     var data interface{}
-    defer func(d interface{}) { tmpl.Execute(w, d) }(&data)
+    defer func(d interface{}) { err := tmpl.Execute(w, d); if err != nil { log.Println(err) } }(&data)
 
     session, err := Session(r)
     if err != nil {
@@ -152,22 +153,21 @@ func getFlashes(r *http.Request, key FlashKey) []string {
     return outFlashes
 }
 
-func addFlashes(r *http.Request, d templates.Vars) templates.Vars {
-    errors := getFlashes(r, ErrorFlashKey)
-    warnings := getFlashes(r, WarningFlashKey)
-    infos := getFlashes(r, InfoFlashKey)
-    successes := getFlashes(r, SuccessFlashKey)
+func addFlashes(r *http.Request, d *templates.Vars) {
+    vars := *d
+    vars["Errors"] = getFlashes(r, ErrorFlashKey)
+    vars["Warnings"] = getFlashes(r, WarningFlashKey)
+    vars["Infos"] = getFlashes(r, InfoFlashKey)
+    vars["Successes"] = getFlashes(r, SuccessFlashKey)
+}
 
-    return templates.Vars(struct {
-        templates.Vars
-        Errors, Warnings, Infos, Successes []string
-    }{
-        d,
-        errors, warnings, infos, successes,
-    })
+func addConfig(r *http.Request, d *templates.Vars) {
+    c := config.Config
+    (*d)["SiteTitle"] = c.GlobalVars.SiteTitle
 }
 
 func init() {
+    templates.Register(addConfig)
     templates.Register(addFlashes)
 
     http.HandleFunc("/", processHooks)

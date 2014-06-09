@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-    c := config.GetConfiguration()
+    c := config.Config
 
     http.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir(c.PublicDir))))
 

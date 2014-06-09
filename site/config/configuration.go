@@ -7,7 +7,7 @@ import (
 )
 
 // Main configuration structure
-type Configuration struct {
+type configuration struct {
     PublicDir string `json:"public_dir"`
     TemplateDir string `json:"template_dir"`
     GlobalVars struct {
@@ -16,7 +16,7 @@ type Configuration struct {
     ConnectionString string `json:"connection_string"`
 }
 
-func (c *Configuration) Validate() error {
+func (c *configuration) validate() error {
     if c.PublicDir == "" {
         return errors.New("public_dir cannot be empty")
     }
@@ -36,48 +36,38 @@ func (c *Configuration) Validate() error {
     return nil
 }
 
-var config *Configuration
-
-func loadConfiguration() {
-    if config != nil {
-        return
-    }
-
-    file, err := os.Open("./goblog.config.json")
-    if err != nil {
-        panic(err)
-    }
-
-    config = &Configuration{}
-    decoder := json.NewDecoder(file)
-    err = decoder.Decode(config)
-    if err != nil {
-        panic(err)
-    }
-
-    err = config.Validate()
-    if err != nil {
-        panic(err)
-    }
-}
-
-func SaveConfiguration() {
-    loadConfiguration()
-
+func (c *configuration) Save() {
     file, err := os.Open("./goblog.config.json")
     if err != nil {
         panic(err)
     }
 
     encoder := json.NewEncoder(file)
-    err = encoder.Encode(config)
+    err = encoder.Encode(c)
     if err != nil {
         panic(err)
     }
 }
 
-func GetConfiguration() *Configuration {
-    loadConfiguration()
+func loadConfiguration() *configuration {
+    file, err := os.Open("./goblog.config.json")
+    if err != nil {
+        panic(err)
+    }
+
+    config := &configuration{}
+    decoder := json.NewDecoder(file)
+    err = decoder.Decode(config)
+    if err != nil {
+        panic(err)
+    }
+
+    err = config.validate()
+    if err != nil {
+        panic(err)
+    }
 
     return config
 }
+
+var Config *configuration = loadConfiguration()

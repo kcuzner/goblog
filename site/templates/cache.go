@@ -42,7 +42,7 @@ type TemplateCache struct {
 var defaultOptions = amber.Options{true, false}
 
 func NewTemplateCache() (*TemplateCache, error) {
-    c := config.GetConfiguration()
+    c := config.Config
 
     t := TemplateCache{c.TemplateDir, make(chan templateRequest, 50)}
 

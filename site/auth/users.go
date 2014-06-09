@@ -176,11 +176,8 @@ func userOnBeforeRequest(r *http.Request) {
     context.Set(r, UserKey, user)
 }
 
-func addUser(r *http.Request, d templates.Vars) templates.Vars {
-    return templates.Vars(struct {
-        templates.Vars
-        user *User
-    }{d, UserFor(r)})
+func addUser(r *http.Request, d *templates.Vars) {
+    (*d)["User"] = UserFor(r)
 }
 
 func init() {
