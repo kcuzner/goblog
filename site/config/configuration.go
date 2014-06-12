@@ -30,7 +30,7 @@ func (c *configuration) validate() error {
 	}
 
 	if c.ConnectionString == "" {
-		return errors.New("connetion_string cannot be empty")
+		return errors.New("connection_string cannot be empty")
 	}
 
 	return nil
