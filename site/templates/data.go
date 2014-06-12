@@ -1,70 +1,27 @@
 package templates
 
 import (
-    "bitbucket.org/kcuzner/goblog/site/config"
+	"net/http"
 )
 
-type FlashKey string
+type Vars map[interface{}]interface{}
 
-const (
-    ErrorFlashKey FlashKey = "error"
-    WarningFlashKey = "warning"
-    InfoFlashKey = "info"
-    SuccessFlashKey = "success"
-)
+var handlers = make([]func(*http.Request, *Vars), 0)
 
-// Source for flashes compatible with gorrila sessions
-type FlashSource interface {
-    Flashes(...string) []interface{}
-}
-
-// Source for a user
-type UserSource interface {
-    User() interface{}
-}
-
-type GlobalVarSource interface {
-    FlashSource
-    UserSource
-}
-
-// Store for flashes compatible with gorrilla sessions
-type FlashStore interface {
-    AddFlash(value interface{}, vars ...string)
-}
-
-// Global template data
-type GlobalVars struct {
-    SiteTitle string
-    Errors, Warnings, Infos, Successes []string
-    User interface{}
-}
-
-var configuration = config.GetConfiguration()
-
-func Flash(s FlashStore, key FlashKey, value string) {
-    s.AddFlash(value, string(key))
-}
-
-func getFlashes(s FlashSource, key FlashKey) []string {
-    inFlashes := s.Flashes(string(key))
-    outFlashes := make([]string, 0)
-    for i := range inFlashes {
-        outFlashes = append(outFlashes, inFlashes[i].(string))
-    }
-
-    println(key, outFlashes)
-
-    return outFlashes
+// Registers a function which will modify the global vars in some way, generally
+// by adding new members
+func Register(handler func(*http.Request, *Vars)) {
+	handlers = append(handlers, handler)
 }
 
 // Gets the global variables for templates
-func GetGlobalVars(s GlobalVarSource) GlobalVars {
-    return GlobalVars{configuration.GlobalVars.SiteTitle,
-        getFlashes(s, ErrorFlashKey),
-        getFlashes(s, WarningFlashKey),
-        getFlashes(s, InfoFlashKey),
-        getFlashes(s, SuccessFlashKey),
-        s.User()}
-}
+// This runs all handlers which have been registered to create global variables.
+// The handlers could run in arbitrary order.
+func GetGlobalVars(r *http.Request) Vars {
+	data := make(Vars)
+	for i := range handlers {
+		handlers[i](r, &data)
+	}
 
+	return data
+}
