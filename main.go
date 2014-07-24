@@ -3,6 +3,7 @@ package main
 import (
 	_ "github.com/kcuzner/goblog/site"
 	_ "github.com/kcuzner/goblog/site/auth"
+	_ "github.com/kcuzner/goblog/site/blog"
 	"github.com/kcuzner/goblog/site/config"
 	"log"
 	"net/http"
