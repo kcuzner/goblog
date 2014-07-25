@@ -4,6 +4,8 @@ import (
 	"github.com/kcuzner/goblog/site/db"
 	"labix.org/v2/mgo/bson"
 	"time"
+	"errors"
+	"math"
 )
 
 type (
@@ -72,6 +74,24 @@ func (f Feed) Posts() (Posts, error) {
 	var results Posts
 	err := db.Current.Find(post, bson.M{"_id": bson.M{"$in": f.PostIds}}).All(&results)
 
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+func (f Feed) PostPage(number, size int) (Posts, error) {
+	length := len(f.PostIds)
+	if number < 1 || number > int(math.Ceil(float64(length) / float64(size))) {
+		return nil, errors.New("Page number is out of range")
+	}
+
+	index := (number - 1) * size
+
+	post := new(Post)
+	var results Posts
+	err := db.Current.Find(post, bson.M{"_id": bson.M{"$in": f.PostIds[index:index + size]}}).All(&results)
 	if err != nil {
 		return nil, err
 	}

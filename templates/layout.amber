@@ -4,6 +4,7 @@
         link[href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"][rel="stylesheet"]
         link[href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/flatly/bootstrap.min.css"][rel="stylesheet"]
         link[href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css"][rel="stylesheet"]
+        link[href="/public/main.css"][rel="stylesheet"]
         script[type="text/javascript"][src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"]
         script[type="text/javascript"][src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"]
     body
@@ -40,6 +41,9 @@
                 div.alert.alert-success #{$msg}
         div.container
             block body
+        p.text-center.text-muted.copyright-block Copyright &copy; Kevin Cuzner.
+            br
+            | Content on this site may be used without permission so long as credit and copyright notice remains intact
         script[type="text/javascript"][src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js"]
         block scripts
         script[type="text/javascript"]

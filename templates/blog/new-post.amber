@@ -1,0 +1,15 @@
+extends ../layout-sidebar.amber
+
+block main
+    h3 New Post
+    p.text-muted Posting to feed #{Feed.Title}
+    form
+        div.form-group
+            label Title
+            input.form-control[type="text"]
+        div.form-group
+            label Content
+            textarea.form-control
+        button.btn.btn-default.pull-right[type="button"] Cancel
+        button.btn.btn-primary[type="submit"] Submit Post
+        button.btn.btn-warning[type="button"] Save Draft

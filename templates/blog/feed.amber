@@ -1,0 +1,11 @@
+extends ../layout-sidebar.amber
+
+block main
+    if User && RolePostNew
+        div.pull-right
+            a.btn.btn-primary[href="/posts/new?feed=" + FeedId]
+                span.glyphicon.glyphicon-plus
+                | New Post
+    h2 #{FeedTitle}
+    each $post in Page
+        h3.title #{$post.Title}
