@@ -2,8 +2,11 @@
  * New post javascript
  */
 define(['_', 'ko', 'ko-bindings'], function (_, ko) {
-    function NewPostView() {
+    function NewPostView(dto) {
         var self = this;
+
+        this.title = ko.observable(dto.title);
+        this.path = ko.observable(dto.path);
 
         this.parsers = [{
             name: 'Markdown',
@@ -20,6 +23,11 @@ define(['_', 'ko', 'ko-bindings'], function (_, ko) {
         });
 
         this.content = ko.observable();
+
+        this.title.subcribe(function (t) {
+            if (!self.path()) {
+            }
+        });
     }
 
     return NewPostView;

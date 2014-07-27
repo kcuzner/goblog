@@ -18,7 +18,7 @@ type (
 		Parser   string          `json:"parser" bson:"parser"`
 		Created  time.Time       `json:"created" bson:"created"`
 		Modified time.Time       `json:"modified" bson:"modified"`
-		Authors  []bson.ObjectId `json:"authors" bson:"_authors"`
+		Author   bson.ObjectId `json:"author" bson:"_author"`
 	}
 	Feeds []Feed
 	Feed  struct {
@@ -29,8 +29,18 @@ type (
 	}
 )
 
-func NewPost(path, title, content, parser string, author bson.ObjectId) (*Post, error) {
-	return nil, nil
+func NewPost(path, title, content, parser string, author bson.ObjectId) *Post {
+	post := new(Post)
+	post.Id = bson.NewObjectId()
+	post.Path = path
+	post.Title = title
+	post.Content = content
+	post.Parser = parser
+	post.Created = time.Now()
+	post.Modified = post.Created
+	post.Author = author
+
+	return post
 }
 
 func GetPost(path string) (*Post, error) {
@@ -49,8 +59,25 @@ func (p Post) Indexes() [][]string { return [][]string{[]string{"path"}} }
 func (p Post) Unique() bson.M      { return bson.M{"path": p.Path} }
 func (p Post) PreSave()            {}
 
-func Newfeed(path, title string) (*Feed, error) {
-	return nil, nil
+func NewFeed(path, title string) *Feed {
+	feed := new(Feed)
+	feed.Id = bson.NewObjectId()
+	feed.Path = path
+	feed.Title = title
+
+	return feed
+}
+
+func GetAllFeeds() (Feeds, error) {
+	feed := new(Feed)
+
+	var results Feeds
+	err := db.Current.Find(feed, nil).All(&results)
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 func GetFeed(path string) (*Feed, error) {

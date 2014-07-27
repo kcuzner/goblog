@@ -18,10 +18,6 @@ define(['_', 'ko'], function (_, ko) {
 
             var editor = ace.edit(element.id);
 
-            //if (options.theme) editor.setTheme("ace/theme/" + options.theme);
-            //if (options.mode) editor.getSession().setMode("ace/mode/" + options.mode);
-            //if (options.readOnly) editor.setReadOnly(true);
-
             editor.setValue(value);
             editor.gotoLine(0);
 
@@ -67,7 +63,6 @@ define(['_', 'ko'], function (_, ko) {
                     editor.gotoLine(0);
                 }
             }
-            console.log('updated');
         }
     };
 

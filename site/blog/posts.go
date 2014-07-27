@@ -2,7 +2,7 @@ package blog
 
 import (
 	"net/http"
-	"html/template"
+	//"html/template"
 	"github.com/kcuzner/goblog/site"
 	"github.com/kcuzner/goblog/site/auth"
 	"github.com/kcuzner/goblog/site/db"
@@ -60,15 +60,34 @@ func newPostGet(w http.ResponseWriter, r *http.Request) {
 	feed := new(Feed)
 	err := db.Current.Find(feed, bson.M{ "_id": bson.ObjectIdHex(r.URL.Query().Get("feed")) }).One(&feed)
 	if err != nil || feed == nil {
-		println(err.Error())
 		//no feed?
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	site.RenderTemplate(w, r, "blog/new-post", func (w http.ResponseWriter, r *http.Request, d templates.Vars) (templates.Vars, error) {
-		d["Feed"] = feed
-		d["Test"] = template.HTML("<b>What?</b><script type=\"text/javascript\"")
+	post := NewPost("", "", "", "", user.Id)
+
+	doPostEditor(post, []Feed{ *feed }, w, r)
+}
+
+func doPostEditor(post *Post, feeds []Feed, w http.ResponseWriter, r *http.Request) {
+	site.RenderTemplate(w, r, "blog/edit-post", func (w http.ResponseWriter, r *http.Request, d templates.Vars) (templates.Vars, error) {
+		feedIds := make([]string, len(feeds))
+		for i := range feeds {
+			feedIds[i] = feeds[i].Id.Hex()
+		}
+
+		allFeeds, err := GetAllFeeds()
+		if err != nil{
+			return nil, err
+		}
+
+		//TODO: The post ids returned needs to be fixed
+
+		d["AllFeeds"] = allFeeds
+		d["Feeds"] = feedIds
+		d["Post"] = post
+
 		return d, nil
 	})
 }
@@ -77,6 +96,11 @@ func newPostPost(w http.ResponseWriter, r *http.Request) {
 	user := auth.UserFor(r)
 	if !user.HasRole(NewPostRole) {
 		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if r.ParseForm() != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -93,5 +117,6 @@ func init() {
 	pr.HandleFunc("/new", newPostGet).
 		Methods("GET")
 	pr.HandleFunc("/new", newPostPost).
-		Methods("POST")
+		Methods("POST").
+		Headers("X-Requested-With", "XMLHttpRequest")
 }
