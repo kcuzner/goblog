@@ -5,3 +5,6 @@ block body
         div.col-sm-9
             block main
         div.col-sm-3
+
+block scripts
+    block script

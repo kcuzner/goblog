@@ -5,3 +5,8 @@
 p.copyright-block {
     margin: 2em 0;
 }
+
+.new-post-editor {
+    width: 100%;
+    height: 400px;
+}

@@ -2,6 +2,7 @@ package blog
 
 import (
 	"net/http"
+	"html/template"
 	"github.com/kcuzner/goblog/site"
 	"github.com/kcuzner/goblog/site/auth"
 	"github.com/kcuzner/goblog/site/db"
@@ -67,6 +68,7 @@ func newPostGet(w http.ResponseWriter, r *http.Request) {
 
 	site.RenderTemplate(w, r, "blog/new-post", func (w http.ResponseWriter, r *http.Request, d templates.Vars) (templates.Vars, error) {
 		d["Feed"] = feed
+		d["Test"] = template.HTML("<b>What?</b><script type=\"text/javascript\"")
 		return d, nil
 	})
 }
