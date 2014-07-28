@@ -1,14 +1,16 @@
 package blog
 
 import (
-	"net/http"
-	//"html/template"
+	"encoding/json"
 	"github.com/kcuzner/goblog/site"
 	"github.com/kcuzner/goblog/site/auth"
 	"github.com/kcuzner/goblog/site/db"
 	"github.com/kcuzner/goblog/site/templates"
+	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
+	"net/http"
 	"strconv"
+	"time"
 )
 
 const (
@@ -35,7 +37,7 @@ func feedGet(path string, w http.ResponseWriter, r *http.Request) bool {
 		d["FeedTitle"] = feed.Title
 		return d, nil
 	})
-	
+
 	return true
 }
 
@@ -44,6 +46,7 @@ func postGet(path string, w http.ResponseWriter, r *http.Request) bool {
 	return false
 }
 
+// Handles creating a new post form from nothing
 func newPostGet(w http.ResponseWriter, r *http.Request) {
 	user := auth.UserFor(r)
 	if !user.HasRole(NewPostRole) {
@@ -58,7 +61,7 @@ func newPostGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	feed := new(Feed)
-	err := db.Current.Find(feed, bson.M{ "_id": bson.ObjectIdHex(r.URL.Query().Get("feed")) }).One(&feed)
+	err := db.Current.Find(feed, bson.M{"_id": bson.ObjectIdHex(r.URL.Query().Get("feed"))}).One(&feed)
 	if err != nil || feed == nil {
 		//no feed?
 		w.WriteHeader(http.StatusBadRequest)
@@ -67,18 +70,20 @@ func newPostGet(w http.ResponseWriter, r *http.Request) {
 
 	post := NewPost("", "", "", "", user.Id)
 
-	doPostEditor(post, []Feed{ *feed }, w, r)
+	doPostEditor(post, []Feed{*feed}, w, r)
 }
 
+// Renders the post editor for the passed post with the passed feed hints
+// Note that the feeds array is merged client-side with the feeds already attached to the post
 func doPostEditor(post *Post, feeds []Feed, w http.ResponseWriter, r *http.Request) {
-	site.RenderTemplate(w, r, "blog/edit-post", func (w http.ResponseWriter, r *http.Request, d templates.Vars) (templates.Vars, error) {
+	site.RenderTemplate(w, r, "blog/edit-post", func(w http.ResponseWriter, r *http.Request, d templates.Vars) (templates.Vars, error) {
 		feedIds := make([]string, len(feeds))
 		for i := range feeds {
 			feedIds[i] = feeds[i].Id.Hex()
 		}
 
 		allFeeds, err := GetAllFeeds()
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 
@@ -92,18 +97,108 @@ func doPostEditor(post *Post, feeds []Feed, w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func newPostPost(w http.ResponseWriter, r *http.Request) {
+type editDTO struct {
+	Id      string   `json:id`
+	Feeds   []string `json:feeds`
+	Title   string   `json:title`
+	Path    string   `json:path`
+	Parser  string   `json:parser`
+	Content string   `json:content`
+}
+
+type editResponse struct {
+	Error string `json:error`
+	Id    string `json:id`
+}
+
+// Handles submission of the edit post form created by doPostEditor
+func editPostPost(w http.ResponseWriter, r *http.Request) {
 	user := auth.UserFor(r)
 	if !user.HasRole(NewPostRole) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	if r.ParseForm() != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	d := json.NewDecoder(r.Body)
+	e := json.NewEncoder(w)
+
+	var req editDTO
+	if d.Decode(&req) != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
+	//update post
+	var post Post
+	if err := db.Current.Find(post, bson.M{"_id": bson.ObjectIdHex(req.Id)}).One(&post); err != nil {
+		if err != mgo.ErrNotFound {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		} else {
+			post.Created = time.Now()
+		}
+	}
+
+	post.Id = bson.ObjectIdHex(req.Id)
+	post.Path = req.Path
+	post.Title = req.Title
+	post.Content = req.Content
+	post.Parser = req.Parser
+	post.Modified = time.Now()
+	post.Author = user.Id
+
+	//update feeds
+	current := make(map[string]bool)
+	for i := range req.Feeds {
+		current[req.Feeds[i]] = true
+	}
+	existing, err := post.Feeds();
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	for i := range existing {
+		if v, ok := current[existing[i].Id.Hex()]; !ok || !v {
+			current[existing[i].Id.Hex()] = false
+		}
+	}
+	feedIds := make([]bson.ObjectId, 0, len(current))
+	for k, _ := range current {
+		println(k)
+		feedIds = append(feedIds, bson.ObjectIdHex(k))
+	}
+	feed := new(Feed)
+	var feeds Feeds
+	if err := db.Current.Find(feed, bson.M{"_id": bson.M{"$in": feedIds}}).All(&feeds); err != nil {
+		println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		e.Encode(editResponse{"Unable to load feeds", post.Id.Hex()})
+		return
+	}
+	for i := range feeds {
+		if current[feeds[i].Id.Hex()] {
+			(&feeds[i]).AddPost(post.Id)
+		} else {
+			(&feeds[i]).RemovePost(post.Id)
+		}
+		if _, err = db.Current.Upsert(feeds[i]); err != nil {
+			println(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			e.Encode(editResponse{"Unable to save feeds", post.Id.Hex()})
+			return
+		}
+	}
+
+
+	if _, err := db.Current.Upsert(post); err != nil {
+		println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		e.Encode(editResponse{"Unable to save post", post.Id.Hex()})
+		return
+	} else if err := e.Encode(editResponse{"", post.Id.Hex()}); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func init() {
@@ -116,7 +211,7 @@ func init() {
 	pr := s.Router().PathPrefix("/posts").Subrouter()
 	pr.HandleFunc("/new", newPostGet).
 		Methods("GET")
-	pr.HandleFunc("/new", newPostPost).
+	pr.HandleFunc("/edit", editPostPost).
 		Methods("POST").
 		Headers("X-Requested-With", "XMLHttpRequest")
 }

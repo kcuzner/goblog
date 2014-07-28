@@ -74,7 +74,8 @@ func RegisterHookAfter(hook AfterHook) {
 	afterHooks = append(afterHooks, hook)
 }
 
-type PathFunc func (path string, w http.ResponseWriter, r *http.Request) bool
+type PathFunc func(path string, w http.ResponseWriter, r *http.Request) bool
+
 var pathFuncHandlers []PathFunc
 
 // Registers a function to attempt to handle any path
@@ -96,7 +97,7 @@ func processHooks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.r.ServeHTTP(w, r)
-	
+
 handled:
 	for i := range afterHooks {
 		afterHooks[i].After(r)
