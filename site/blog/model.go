@@ -88,6 +88,10 @@ func (p Post) Compiled() template.HTML {
 	return template.HTML(p.Content)
 }
 
+func (p Post) CreatedString() string {
+	return p.Created.Format(time.RFC1123)
+}
+
 func NewFeed(path, title string) *Feed {
 	feed := new(Feed)
 	feed.Id = bson.NewObjectId()
