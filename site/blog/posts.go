@@ -11,6 +11,7 @@ import (
 	"labix.org/v2/mgo/bson"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -110,7 +111,9 @@ func editPostGet(w http.ResponseWriter, r *http.Request) {
 	feeds, err := post.Feeds()
 	if err != nil {
 		//feed getting error?
+		println(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	doPostEditor(post, feeds, w, r)
@@ -147,6 +150,7 @@ type editDTO struct {
 	Path    string   `json:path`
 	Parser  string   `json:parser`
 	Content string   `json:content`
+	Tags    string   `json:tags`
 }
 
 type editResponse struct {
@@ -189,6 +193,7 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	post.Parser = req.Parser
 	post.Modified = time.Now()
 	post.Author = user.Id
+	post.Tags = strings.Fields(req.Tags)
 
 	//update feeds
 	current := make(map[string]bool)
@@ -243,11 +248,46 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// gets a page of posts with a specific tag
+func tagGet(w http.ResponseWriter, r *http.Request) {
+	tag, ok := mux.Vars(r)["tag"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	posts, err := GetPostsByTag(tag, 1, 20)
+	if err != nil {
+		println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	site.RenderTemplate(w, r, "blog/feed", func(w http.ResponseWriter, r *http.Request, d templates.Vars) (templates.Vars, error) {
+		d["Page"] = posts
+		if err != nil {
+			d["Page"] = make([]interface{}, 0)
+		}
+		d["FeedTitle"] = "Tag: " + tag
+		return d, nil
+	})
+}
+
+// adds tag data to the template variables
+func addPostTags(r *http.Request, t *templates.Vars) {
+	tags, err := GetTagCount()
+	if err == nil {
+		(*t)["Tags"] = tags
+	}
+}
+
 func init() {
 	auth.RegisterRole(NewPostRole)
 	
 	site.HandlePathFunc(feedGet)
 	site.HandlePathFunc(postGet)
+
+	templates.Register(addPostTags)
 
 	s := site.GetSite()
 	pr := s.Router().PathPrefix("/posts").Subrouter()
@@ -258,4 +298,6 @@ func init() {
 	pr.HandleFunc("/edit", editPostPost).
 		Methods("POST").
 		Headers("X-Requested-With", "XMLHttpRequest")
+	pr.HandleFunc("/tag/{tag}", tagGet).
+		Methods("GET")
 }

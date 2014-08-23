@@ -23,6 +23,9 @@ block main
                 div.form-group
                     label Feeds
                     select.form-control[data-bind="options: $parent.feeds, optionsText: 'title', optionsValue: 'id', selectedOptions: feeds"][multiple]
+                div.form-group
+                    label Tags
+                    input.form-control[type="text"][data-bind="value: tags"][placeholder="Space separated tags"]
                 button.btn.btn-primary[type="submit"] Submit Post
                 button.btn.btn-warning[type="button"][data-bind="click: $parent.saveDraft.bind($parent)"] Save Draft
 

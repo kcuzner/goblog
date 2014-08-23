@@ -32,6 +32,8 @@ define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
 
         this.content = ko.observable(dto.content);
 
+        this.tags = ko.observable((dto.tags || []).join(' '));
+
         this.title.subscribe(function (t) {
             if (!self.path()) {
                 var title = t.replace(/^[^a-zA-Z0-9]+/, '')
@@ -55,7 +57,8 @@ define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
             title: this.title(),
             path: this.path(),
             parser: this.parser().name,
-            content: this.content()
+            content: this.content(),
+            tags: this.tags()
         };
     };
 

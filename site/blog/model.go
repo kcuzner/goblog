@@ -5,8 +5,10 @@ import (
 	"errors"
 	"github.com/russross/blackfriday"
 	"html/template"
+	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 	"math"
+	"sort"
 	"time"
 )
 
@@ -61,6 +63,81 @@ func GetPost(path string) (*Post, error) {
 	return post, nil
 }
 
+type tagData struct {
+	Tag   string `bson:"_id"`
+	Count int    `bson:"value"`
+}
+type tagCount []tagData
+
+func (t tagCount) Len() int           { return len(t) }
+func (t tagCount) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
+func (t tagCount) Less(i, j int) bool { return t[i].Count < t[j].Count }
+
+// map reduce query for counting post tags
+// This, my friends, is why we are using mongo here
+var tagCountMapReduce = mgo.MapReduce{
+	Map: `function () {
+		if (!this.tags) { return; }
+		for(index in this.tags) {
+			emit(this.tags[index], 1);
+		}
+	}`,
+	Reduce: `function (previous, current) {
+		var count = 0;
+
+		for (index in current) {
+			count += current[index];
+		}
+
+		return count;
+	}`,
+}
+
+// Gets the tag count for all posts
+func GetTagCount() (tagCount, error) {
+	post := new(Post)
+	var count tagCount
+	_, err := db.Current.Find(post, nil).MapReduce(&tagCountMapReduce, &count)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Sort(count)
+
+	return count, nil
+}
+
+// Gets all posts by the tag, sorted in order by creatino date
+// tag: Tag to find posts for
+// page: Page number to grab posts for (NOTE: This uses skip/take and thus is O(N) for the page number)
+func GetPostsByTag(tag string, page, size int) (Posts, error) {
+	if page < 1 || size < 1 {
+		return nil, errors.New("Page and size must be greater than 0")
+	}
+
+	post := new(Post)
+	results := make(Posts, 0, 20)
+	iter := db.Current.
+		Find(post, bson.M{"tags": tag}).
+		Sort("created").
+		Skip((page - 1) * size).
+		Iter()
+	for i := 0; i < size; i++ {
+		ok := iter.Next(&post)
+		if !ok {
+			if err := iter.Err(); err != nil {
+				return nil, err
+			} else {
+				break
+			}
+		} else {
+			results = append(results, *post)
+		}
+	}
+
+	return results, nil
+}
+
 func (p Post) Collection() string  { return "posts" }
 func (p Post) Indexes() [][]string { return [][]string{[]string{"path"}} }
 func (p Post) Unique() bson.M      { return bson.M{"_id": p.Id} }
@@ -91,6 +168,10 @@ func (p Post) Compiled() template.HTML {
 func (p Post) CreatedString() string {
 	return p.Created.Format(time.RFC1123)
 }
+
+func (p Posts) Len() int { return len(p) }
+func (p Posts) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p Posts) Less(i, j int) bool { return p[i].Created.Before(p[j].Created) }
 
 func NewFeed(path, title string) *Feed {
 	feed := new(Feed)
