@@ -6,6 +6,7 @@ import (
 	"github.com/kcuzner/goblog/site/auth"
 	"github.com/kcuzner/goblog/site/db"
 	"github.com/kcuzner/goblog/site/templates"
+	"github.com/gorilla/mux"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 	"net/http"
@@ -42,8 +43,18 @@ func feedGet(path string, w http.ResponseWriter, r *http.Request) bool {
 }
 
 func postGet(path string, w http.ResponseWriter, r *http.Request) bool {
-	println("post?", path)
-	return false
+	post := new(Post)
+	err := db.Current.Find(post, bson.M{"path": path}).One(&post)
+	if err != nil || post == nil {
+		return false
+	}
+
+	site.RenderTemplate(w, r, "blog/post", func(w http.ResponseWriter, r *http.Request, d templates.Vars) (templates.Vars, error) {
+		d["Post"] = post
+		return d, nil
+	})
+
+	return true
 }
 
 // Handles creating a new post form from nothing
@@ -71,6 +82,38 @@ func newPostGet(w http.ResponseWriter, r *http.Request) {
 	post := NewPost("", "", "", "", user.Id)
 
 	doPostEditor(post, []Feed{*feed}, w, r)
+}
+
+//Handles editing an existing post
+func editPostGet(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFor(r)
+	if !user.HasRole(NewPostRole) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	id, ok := mux.Vars(r)["id"]
+	if !ok || len(id) != 24 {
+		//no id or an invalid id length?
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	post := new(Post)
+	err := db.Current.Find(post, bson.M{"_id": bson.ObjectIdHex(id)}).One(&post)
+	if err != nil || post == nil {
+		//no post?
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	feeds, err := post.Feeds()
+	if err != nil {
+		//feed getting error?
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	doPostEditor(post, feeds, w, r)
 }
 
 // Renders the post editor for the passed post with the passed feed hints
@@ -152,7 +195,7 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	for i := range req.Feeds {
 		current[req.Feeds[i]] = true
 	}
-	existing, err := post.Feeds();
+	existing, err := post.Feeds()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -189,7 +232,6 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-
 	if _, err := db.Current.Upsert(post); err != nil {
 		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -210,6 +252,8 @@ func init() {
 	s := site.GetSite()
 	pr := s.Router().PathPrefix("/posts").Subrouter()
 	pr.HandleFunc("/new", newPostGet).
+		Methods("GET")
+	pr.HandleFunc("/edit/{id}", editPostGet).
 		Methods("GET")
 	pr.HandleFunc("/edit", editPostPost).
 		Methods("POST").

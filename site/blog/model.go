@@ -3,6 +3,8 @@ package blog
 import (
 	"github.com/kcuzner/goblog/site/db"
 	"errors"
+	"github.com/russross/blackfriday"
+	"html/template"
 	"labix.org/v2/mgo/bson"
 	"math"
 	"time"
@@ -16,6 +18,7 @@ type (
 		Title    string        `json:"title" bson:"title"`
 		Content  string        `json:"content" bson:"content"`
 		Parser   string        `json:"parser" bson:"parser"`
+		Tags     []string      `json:"tags" bson:"tags"`
 		Created  time.Time     `json:"created" bson:"created"`
 		Modified time.Time     `json:"modified" bson:"modified"`
 		Author   bson.ObjectId `json:"author" bson:"_author"`
@@ -60,7 +63,7 @@ func GetPost(path string) (*Post, error) {
 
 func (p Post) Collection() string  { return "posts" }
 func (p Post) Indexes() [][]string { return [][]string{[]string{"path"}} }
-func (p Post) Unique() bson.M      { return bson.M{"path": p.Path} }
+func (p Post) Unique() bson.M      { return bson.M{"_id": p.Id} }
 func (p Post) PreSave()            {}
 
 // Gets all feeds that have this post attached
@@ -74,6 +77,15 @@ func (p Post) Feeds() (Feeds, error) {
 	}
 
 	return results, nil
+}
+
+// Gets the compiled HTML for this post
+func (p Post) Compiled() template.HTML {
+	if p.Parser == "Markdown" {
+		return template.HTML(blackfriday.MarkdownCommon([]byte(p.Content)))
+	}
+
+	return template.HTML(p.Content)
 }
 
 func NewFeed(path, title string) *Feed {

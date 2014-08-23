@@ -1,0 +1,9 @@
+extends ../layout-sidebar.amber
+
+block main
+    if User && RolePostNew
+        div.pull-right.btn-group
+            a.btn.btn-default.btn-xs[href="/posts/edit/" + Post.Id.Hex]
+                span.glyphicon.glyphicon-edit
+    h2.title #{Post.Title}
+    div.post-content #{Post.Compiled}

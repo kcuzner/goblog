@@ -1,11 +1,19 @@
 extends ../layout-sidebar.amber
+include mixins.amber
 
 block main
-    if User && RolePostNew
+    $canPost = User && RolePostNew
+    if $canPost
         div.pull-right
             a.btn.btn-primary[href="/posts/new?feed=" + FeedId]
                 span.glyphicon.glyphicon-plus
                 | New Post
     h2 #{FeedTitle}
     each $post in Page
-        h3.title #{$post.Title}
+        if $canPost
+            div.pull-right.btn-group
+                a.btn.btn-default.btn-xs[href="/posts/edit/" + $post.Id.Hex]
+                    span.glyphicon.glyphicon-edit
+        h3.title.post-title
+            a[href=$post.Path][target="_blank"] #{$post.Title}
+        div.post-content #{$post.Compiled}

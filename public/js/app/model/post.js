@@ -30,11 +30,15 @@ define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
             return (parser && parser.mode) || '';
         });
 
-        this.content = ko.observable();
+        this.content = ko.observable(dto.content);
 
         this.title.subscribe(function (t) {
             if (!self.path()) {
-                var title = t.substring(0, 150).toLowerCase().replace(/\s/g, '-');
+                var title = t.replace(/^[^a-zA-Z0-9]+/, '')
+                    .replace(/[^a-zA-Z0-9]+$/, '')
+                    .substring(0, 150)
+                    .toLowerCase()
+                    .replace(/[^a-zA-Z0-9]+/g, '-');
                 self.path(self.created.format('/YYYY/MM/DD') + '/' + title);
             }
         });
