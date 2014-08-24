@@ -44,6 +44,10 @@ define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
                 self.path(self.created.format('/YYYY/MM/DD') + '/' + title);
             }
         });
+
+        this.tags.subscribe(function (t) {
+            self.tags(t.toLowerCase());
+        });
     }
 
     /**

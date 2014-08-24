@@ -193,7 +193,7 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	post.Parser = req.Parser
 	post.Modified = time.Now()
 	post.Author = user.Id
-	post.Tags = strings.Fields(req.Tags)
+	post.Tags = strings.Fields(strings.ToLower(req.Tags))
 
 	//update feeds
 	current := make(map[string]bool)

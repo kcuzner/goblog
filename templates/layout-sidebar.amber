@@ -5,9 +5,9 @@ block body
         div.col-sm-9
             block main
         div.col-sm-3
-            dl
-                each $c in $.Tags
-                    a[href="/posts/tag/" + $c.Tag] #{$c.Tag}
+            h4 Tags
+            each $c in $.Tags
+                a[href="/posts/tag/" + $c.Tag][style=$c.Style] #{$c.Tag}
 
 block scripts
     block script

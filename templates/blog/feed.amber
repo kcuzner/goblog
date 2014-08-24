@@ -18,7 +18,7 @@ block main
             a[href=$post.Path][target="_blank"] #{$post.Title}
         div.post-content #{$post.Compiled}
         p.text-right.text-muted Posted on #{$post.CreatedString} |
-            a[href=$post.Path + "#disqus_thread"][data-disqus-identifier="post-" + $post.Id.Hex] Comments
+            a[href=$post.Path + "#disqus_thread"][data-disqus-identifier="post-" + $post.Id.Hex] 0 Comments
 
     script[type="text/javascript"]
         /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */

@@ -2,7 +2,9 @@ package blog
 
 import (
 	"github.com/kcuzner/goblog/site/db"
+	"bytes"
 	"errors"
+	"fmt"
 	"github.com/russross/blackfriday"
 	"html/template"
 	"labix.org/v2/mgo"
@@ -66,12 +68,31 @@ func GetPost(path string) (*Post, error) {
 type tagData struct {
 	Tag   string `bson:"_id"`
 	Count int    `bson:"value"`
+	Size  float64
 }
+
+func (t tagData) Style() template.CSS {
+	return template.CSS(fmt.Sprintf("font-size: %.2fem;", t.Size))
+}
+
 type tagCount []tagData
 
-func (t tagCount) Len() int           { return len(t) }
-func (t tagCount) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
-func (t tagCount) Less(i, j int) bool { return t[i].Count < t[j].Count }
+func (t tagCount) Len() int      { return len(t) }
+func (t tagCount) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t tagCount) Less(i, j int) bool {
+	first := t[i]
+	second := t[j]
+	if first.Count < second.Count {
+		return true
+	} else if first.Count > second.Count {
+		return false
+	} else {
+		//since this is going to be reverse sorted, but we still want
+		//alphabetical order, we need to reverse the alphabetical part of
+		//the comparison
+		return bytes.Compare([]byte(first.Tag), []byte(second.Tag)) > 0
+	}
+}
 
 // map reduce query for counting post tags
 // This, my friends, is why we are using mongo here
@@ -102,7 +123,19 @@ func GetTagCount() (tagCount, error) {
 		return nil, err
 	}
 
-	sort.Sort(count)
+	sort.Sort(sort.Reverse(count))
+
+	//we will now create the relative sizes
+	if len(count) > 0 {
+		max := float64(count[0].Count)
+		for i := range count {
+			c := float64(count[i].Count)
+			max = math.Max(c, max)
+		}
+		for i := range count {
+			count[i].Size = math.Max(float64(count[i].Count)/max, 0.5)
+		}
+	}
 
 	return count, nil
 }
@@ -119,7 +152,7 @@ func GetPostsByTag(tag string, page, size int) (Posts, error) {
 	results := make(Posts, 0, 20)
 	iter := db.Current.
 		Find(post, bson.M{"tags": tag}).
-		Sort("created").
+		Sort("-created").
 		Skip((page - 1) * size).
 		Iter()
 	for i := 0; i < size; i++ {
@@ -169,8 +202,8 @@ func (p Post) CreatedString() string {
 	return p.Created.Format(time.RFC1123)
 }
 
-func (p Posts) Len() int { return len(p) }
-func (p Posts) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p Posts) Len() int           { return len(p) }
+func (p Posts) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 func (p Posts) Less(i, j int) bool { return p[i].Created.Before(p[j].Created) }
 
 func NewFeed(path, title string) *Feed {
@@ -247,14 +280,29 @@ func (f Feed) PostPage(number, size int) (Posts, error) {
 	index0 := (number - 1) * size
 	index1 := int(math.Min(float64(length), float64(index0+size)))
 
+	pageIds := posts[index0:index1]
+
 	post := new(Post)
 	var results Posts
-	err := db.Current.Find(post, bson.M{"_id": bson.M{"$in": posts[index0:index1]}}).All(&results)
+	err := db.Current.Find(post, bson.M{"_id": bson.M{"$in": pageIds}}).All(&results)
 	if err != nil {
 		return nil, err
 	}
 
-	return results, nil
+	sResults := make(map[bson.ObjectId]Post)
+	for i := range results {
+		sResults[results[i].Id] = results[i]
+	}
+
+	page := make(Posts, 0, len(pageIds))
+	for i := range pageIds {
+		p, ok := sResults[pageIds[i]]
+		if ok {
+			page = append(page, p)
+		}
+	}
+
+	return page, nil
 }
 
 // Adds a post or re-activates it
@@ -266,7 +314,7 @@ func (f *Feed) AddPost(id bson.ObjectId) {
 		}
 	}
 
-	f.FeedPosts = append(f.FeedPosts, FeedPost{id, true})
+	f.FeedPosts = append([]FeedPost{FeedPost{id, true}}, f.FeedPosts...)
 }
 
 // De-activates a post
