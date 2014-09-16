@@ -19,13 +19,18 @@ type (
 	Post  struct {
 		Id       bson.ObjectId `json:"id" bson:"_id"`
 		Path     string        `json:"path" bson:"path"`
-		Title    string        `json:"title" bson:"title"`
-		Content  string        `json:"content" bson:"content"`
-		Parser   string        `json:"parser" bson:"parser"`
-		Tags     []string      `json:"tags" bson:"tags"`
+		Versions []PostVersion `json:"versions" bson:"versions"`
 		Created  time.Time     `json:"created" bson:"created"`
 		Modified time.Time     `json:"modified" bson:"modified"`
 		Author   bson.ObjectId `json:"author" bson:"_author"`
+		revision *PostVersion
+	}
+	PostVersion struct {
+		Path    string   `json:"path" bson:"path"`
+		Title   string   `json:"title" bson:"title"`
+		Content string   `json:"content" bson:"content"`
+		Parser  string   `json:"parser" bson:"parser"`
+		Tags    []string `json:"tags" bson:"tags"`
 	}
 	FeedPost struct {
 		Id      bson.ObjectId `json:"id" bson:"_id"`
@@ -42,11 +47,14 @@ type (
 
 func NewPost(path, title, content, parser string, author bson.ObjectId) *Post {
 	post := new(Post)
-	post.Id = bson.NewObjectId()
 	post.Path = path
-	post.Title = title
-	post.Content = content
-	post.Parser = parser
+	post.Versions = append(post.Versions, PostVersion{
+		Path:    path,
+		Title:   title,
+		Content: content,
+		Parser:  parser,
+	})
+	post.Id = bson.NewObjectId()
 	post.Created = time.Now()
 	post.Modified = post.Created
 	post.Author = author
@@ -174,7 +182,18 @@ func GetPostsByTag(tag string, page, size int) (Posts, error) {
 func (p Post) Collection() string  { return "posts" }
 func (p Post) Indexes() [][]string { return [][]string{[]string{"path"}} }
 func (p Post) Unique() bson.M      { return bson.M{"_id": p.Id} }
-func (p Post) PreSave()            {}
+func (p Post) PreSave() {
+	if p.Versions == nil {
+		p.Versions = make([]PostVersion, 0)
+	}
+
+	if p.revision != nil {
+		//we are being revised!
+		p.Versions = append(p.Versions, *p.revision)
+		p.Path = p.revision.Path
+		p.revision = nil
+	}
+}
 
 // Gets all feeds that have this post attached
 func (p Post) Feeds() (Feeds, error) {
@@ -191,15 +210,26 @@ func (p Post) Feeds() (Feeds, error) {
 
 // Gets the compiled HTML for this post
 func (p Post) Compiled() template.HTML {
-	if p.Parser == "Markdown" {
-		return template.HTML(blackfriday.MarkdownCommon([]byte(p.Content)))
+	if len(p.Versions) == 0 {
+		return template.HTML("")
 	}
 
-	return template.HTML(p.Content)
+	v := p.Versions[len(p.Versions)-1]
+
+	if v.Parser == "Markdown" {
+		return template.HTML(blackfriday.MarkdownCommon([]byte(v.Content)))
+	}
+
+	return template.HTML(v.Content)
 }
 
 func (p Post) CreatedString() string {
 	return p.Created.Format(time.RFC1123)
+}
+
+// Sets the current revision of this post
+func (p Post) SetRevision(v *PostVersion) {
+	p.revision = v
 }
 
 func (p Posts) Len() int           { return len(p) }

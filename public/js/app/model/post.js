@@ -13,8 +13,11 @@ define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
 
         this.created = moment(dto.created);
         this.modified = moment(dto.modified);
-        this.title = ko.observable(dto.title);
-        this.path = ko.observable(dto.path);
+
+        var version = dto.versions[dto.versions.length - 1] || {};
+
+        this.title = ko.observable(version.title);
+        this.path = ko.observable(version.path);
 
         this.parsers = [{
             name: 'Markdown',
@@ -24,15 +27,15 @@ define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
             mode: 'html'
         }];
 
-        this.parser = ko.observable(this.parsers[0]);
+        this.parser = ko.observable(_.find(this.parsers, function (p) { return p.name === version.parser; }) || this.parsers[0]);
         this.mode = ko.computed(function () {
             var parser = self.parser();
             return (parser && parser.mode) || '';
         });
 
-        this.content = ko.observable(dto.content);
+        this.content = ko.observable(version.content);
 
-        this.tags = ko.observable((dto.tags || []).join(' '));
+        this.tags = ko.observable((version.tags || []).join(' '));
 
         this.title.subscribe(function (t) {
             if (!self.path()) {
@@ -51,8 +54,8 @@ define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
     }
 
     /**
-     * Transforms this post into a DTO
-     * @return {object} Post dto
+     * Transforms this post into an edit DTO
+     * @return {object} Post edit dto
      */
     Post.prototype.toDTO = function() {
         return {

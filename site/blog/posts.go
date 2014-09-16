@@ -179,21 +179,26 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	var post Post
 	if err := db.Current.Find(post, bson.M{"_id": bson.ObjectIdHex(req.Id)}).One(&post); err != nil {
 		if err != mgo.ErrNotFound {
+			println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		} else {
+			post.Id = bson.NewObjectId()
 			post.Created = time.Now()
 		}
+	} else {
+		post.Id = bson.ObjectIdHex(req.Id)
 	}
 
-	post.Id = bson.ObjectIdHex(req.Id)
-	post.Path = req.Path
-	post.Title = req.Title
-	post.Content = req.Content
-	post.Parser = req.Parser
+	post.SetRevision(&PostVersion{
+		Path:    req.Path,
+		Title:   req.Title,
+		Content: req.Content,
+		Parser:  req.Parser,
+		Tags:    strings.Fields(strings.ToLower(req.Tags)),
+	})
 	post.Modified = time.Now()
 	post.Author = user.Id
-	post.Tags = strings.Fields(strings.ToLower(req.Tags))
 
 	//update feeds
 	current := make(map[string]bool)
@@ -202,6 +207,7 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	}
 	existing, err := post.Feeds()
 	if err != nil {
+		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -273,6 +279,18 @@ func tagGet(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func feedsGet(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func feedIdGet(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func feedPost(w http.ResponseWriter, r *http.Request) {
+	
+}
+
 // adds tag data to the template variables
 func addPostTags(r *http.Request, t *templates.Vars) {
 	tags, err := GetTagCount()
@@ -300,4 +318,13 @@ func init() {
 		Headers("X-Requested-With", "XMLHttpRequest")
 	pr.HandleFunc("/tag/{tag}", tagGet).
 		Methods("GET")
+
+	fr := s.Router().PathPrefix("/feeds").Subrouter()
+	fr.HandleFunc("/", feedsGet).
+		Methods("GET")
+	fr.HandleFunc("/feed/{id}", feedIdGet).
+		Methods("GET")
+	fr.HandleFunc("/edit", feedPost).
+		Methods("POST").
+		Headers("X-Requested-With", "XMLHttpRequest")
 }
