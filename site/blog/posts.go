@@ -279,12 +279,23 @@ func tagGet(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// shows all feeds
 func feedsGet(w http.ResponseWriter, r *http.Request) {
+	feeds, err := GetAllFeeds()
+	if err != nil {
+		println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
+	site.RenderTemplate(w, r, "blog/feeds", func(w http.ResponseWriter, r *http.Request, d templates.Vars) (templates.Vars, error) {
+		d["Feeds"] = feeds
+		return d, nil
+	})
 }
 
 func feedIdGet(w http.ResponseWriter, r *http.Request) {
-
+	println("get one feed")
 }
 
 func feedPost(w http.ResponseWriter, r *http.Request) {
@@ -319,9 +330,9 @@ func init() {
 	pr.HandleFunc("/tag/{tag}", tagGet).
 		Methods("GET")
 
-	fr := s.Router().PathPrefix("/feeds").Subrouter()
-	fr.HandleFunc("/", feedsGet).
+	s.Router().HandleFunc("/feeds", feedsGet).
 		Methods("GET")
+	fr := s.Router().PathPrefix("/feeds").Subrouter()
 	fr.HandleFunc("/feed/{id}", feedIdGet).
 		Methods("GET")
 	fr.HandleFunc("/edit", feedPost).

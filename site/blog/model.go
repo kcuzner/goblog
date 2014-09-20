@@ -208,19 +208,32 @@ func (p Post) Feeds() (Feeds, error) {
 	return results, nil
 }
 
+// Gets the most recent version of this post
+func (p Post) Version() PostVersion {
+	if len(p.Versions) == 0 {
+		return PostVersion{}
+	}
+
+	return p.Versions[len(p.Versions)-1]
+}
+
 // Gets the compiled HTML for this post
 func (p Post) Compiled() template.HTML {
 	if len(p.Versions) == 0 {
 		return template.HTML("")
 	}
 
-	v := p.Versions[len(p.Versions)-1]
+	v := p.Version()
 
 	if v.Parser == "Markdown" {
 		return template.HTML(blackfriday.MarkdownCommon([]byte(v.Content)))
 	}
 
 	return template.HTML(v.Content)
+}
+
+func (p Post) Title() string {
+	return p.Version().Title
 }
 
 func (p Post) CreatedString() string {
@@ -300,9 +313,9 @@ func (f Feed) Posts() (Posts, error) {
 
 // Gets a "page" of posts using the feed's visible posts
 func (f Feed) PostPage(number, size int) (Posts, error) {
-	posts := f.visiblePostIds()
+	postIds := f.visiblePostIds()
 
-	length := len(posts)
+	length := len(postIds)
 	if number < 1 || number > int(math.Ceil(float64(length)/float64(size))) {
 		return nil, errors.New("Page number is out of range")
 	}
@@ -310,7 +323,7 @@ func (f Feed) PostPage(number, size int) (Posts, error) {
 	index0 := (number - 1) * size
 	index1 := int(math.Min(float64(length), float64(index0+size)))
 
-	pageIds := posts[index0:index1]
+	pageIds := postIds[index0:index1]
 
 	post := new(Post)
 	var results Posts
@@ -333,6 +346,41 @@ func (f Feed) PostPage(number, size int) (Posts, error) {
 	}
 
 	return page, nil
+}
+
+// Returns true if the feed has no visible posts
+func (f Feed) Empty() bool {
+	return len(f.visiblePostIds()) == 0
+}
+
+// Gets a "preview" of the most recent posts for this feed.
+// "most recent" is the titles of the last three posts possibly with a ...
+// appended on the end if there are more posts
+func (f Feed) Preview() []string {
+	postIds := f.visiblePostIds()
+
+	previews := make([]string, 0, 4)
+
+	topIndex := int(math.Min(float64(len(postIds)), 3))
+	previewIds := postIds[:topIndex] //we get the first 3 postids
+
+	post := new(Post)
+	var posts Posts
+	err := db.Current.Find(post, bson.M{"_id": bson.M{"$in": previewIds}}).All(&posts)
+	if err != nil {
+		println(err.Error())
+	}
+
+	for i := range posts {
+		println("post", i)
+		previews = append(previews, posts[i].Title())
+	}
+
+	if len(previewIds) < len(postIds) {
+		previews = append(previews, "...")
+	}
+
+	return previews
 }
 
 // Adds a post or re-activates it
