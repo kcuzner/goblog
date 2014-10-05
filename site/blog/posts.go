@@ -61,10 +61,6 @@ func postGet(path string, w http.ResponseWriter, r *http.Request) bool {
 // Handles creating a new post form from nothing
 func newPostGet(w http.ResponseWriter, r *http.Request) {
 	user := auth.UserFor(r)
-	if !user.HasRole(NewPostRole) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
 
 	feedId := r.URL.Query().Get("feed")
 	if feedId == "" || len(feedId) != 24 {
@@ -87,12 +83,6 @@ func newPostGet(w http.ResponseWriter, r *http.Request) {
 
 //Handles editing an existing post
 func editPostGet(w http.ResponseWriter, r *http.Request) {
-	user := auth.UserFor(r)
-	if !user.HasRole(NewPostRole) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
 	id, ok := mux.Vars(r)["id"]
 	if !ok || len(id) != 24 {
 		//no id or an invalid id length?
@@ -161,10 +151,6 @@ type editResponse struct {
 // Handles submission of the edit post form created by doPostEditor
 func editPostPost(w http.ResponseWriter, r *http.Request) {
 	user := auth.UserFor(r)
-	if !user.HasRole(NewPostRole) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
 
 	d := json.NewDecoder(r.Body)
 	e := json.NewEncoder(w)
@@ -299,7 +285,7 @@ func feedIdGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func feedPost(w http.ResponseWriter, r *http.Request) {
-	
+
 }
 
 // adds tag data to the template variables
@@ -320,11 +306,11 @@ func init() {
 
 	s := site.GetSite()
 	pr := s.Router().PathPrefix("/posts").Subrouter()
-	pr.HandleFunc("/new", newPostGet).
+	pr.Handle("/new", auth.Authorize(newPostGet).HasRole(NewPostRole)).
 		Methods("GET")
-	pr.HandleFunc("/edit/{id}", editPostGet).
+	pr.Handle("/edit/{id}", auth.Authorize(editPostGet).HasRole(NewPostRole)).
 		Methods("GET")
-	pr.HandleFunc("/edit", editPostPost).
+	pr.Handle("/edit", auth.Authorize(editPostPost).HasRole(NewPostRole)).
 		Methods("POST").
 		Headers("X-Requested-With", "XMLHttpRequest")
 	pr.HandleFunc("/tag/{tag}", tagGet).
@@ -335,7 +321,7 @@ func init() {
 	fr := s.Router().PathPrefix("/feeds").Subrouter()
 	fr.HandleFunc("/feed/{id}", feedIdGet).
 		Methods("GET")
-	fr.HandleFunc("/edit", feedPost).
+	fr.Handle("/edit", auth.Authorize(feedPost).HasRole(NewPostRole)).
 		Methods("POST").
 		Headers("X-Requested-With", "XMLHttpRequest")
 }
