@@ -6,6 +6,8 @@ block body
             div.well.well-sm
                 h3 Login
                 form[method="POST"][action="/user/login"]
+                    if Next
+                        input[type="hidden"][name="next"][value=Next]
                     div.form-group
                         input.form-control[type="text"][placeholder="Username"][name="username"]
                     div.form-group

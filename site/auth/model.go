@@ -20,6 +20,7 @@ const (
 )
 
 type (
+	Role  string
 	Users []User
 	// User type used by mgo and also for json data encoding
 	User struct {
@@ -28,16 +29,19 @@ type (
 		Password    []byte        `json:"password" bson:"password"`
 		Salt        []byte        `json:"salt" bson:"salt"`
 		DisplayName string        `json:"display_name" bson:"display_name"`
+		Roles       []Role        `json:"roles" bson:"roles"`
 	}
 )
 
 // Creates a new user
+// TODO; Change this so that it doesn't actually save the user
 func NewUser(username, password, displayName string) (*User, error) {
 	user := new(User)
 	user.Id = bson.NewObjectId()
 	user.Username = username
 	user.DisplayName = displayName
 	user.SetPassword(password)
+	user.Roles = make([]Role, 0)
 
 	if db.Current.Exists(user) {
 		return nil, errors.New("User already exists")
@@ -94,6 +98,33 @@ func (u *User) ValidatePassword(plaintext string) bool {
 	test := u.getKey(plaintext)
 
 	return bytes.Equal(u.Password, test)
+}
+
+func (u *User) HasRole(role Role) bool {
+	for i := range u.Roles {
+		if u.Roles[i] == role {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (u *User) AddRole(role Role) {
+	if !u.HasRole(role) {
+		u.Roles = append(u.Roles, role)
+	}
+}
+
+func (u *User) RemoveRole(role Role) {
+	var idx int
+	for i := range u.Roles {
+		if u.Roles[i] == role {
+			idx = i
+		}
+	}
+
+	u.Roles = append(u.Roles[:idx], u.Roles[idx+1:]...)
 }
 
 func init() {

@@ -8,6 +8,7 @@ import (
 	"labix.org/v2/mgo/bson"
 	"log"
 	"net/http"
+	"net/url"
 )
 
 type UserKeyType int
@@ -20,6 +21,7 @@ const (
 // Simply displays a form
 func userLoginGet(w http.ResponseWriter, r *http.Request) {
 	site.RenderTemplate(w, r, "user/login", func(w http.ResponseWriter, r *http.Request, d templates.Vars) (templates.Vars, error) {
+		d["Next"] = r.URL.Query().Get("next")
 		return d, nil
 	})
 }
@@ -27,8 +29,13 @@ func userLoginGet(w http.ResponseWriter, r *http.Request) {
 // Handles POST /user/login.
 // Validates the user and possibly sets the session user if everything is valid
 func userLoginPost(w http.ResponseWriter, r *http.Request) {
+	next := r.FormValue("next")
+
 	//the very last thing we do is redirect to somewhere (set by redirectAddr)
 	redirectAddr := "/user/login"
+	if next != "" {
+		redirectAddr += "?next=" + url.QueryEscape(next)
+	}
 	defer func(addr *string) { http.Redirect(w, r, *addr, http.StatusFound) }(&redirectAddr)
 
 	session, err := site.Session(r)
@@ -58,7 +65,11 @@ func userLoginPost(w http.ResponseWriter, r *http.Request) {
 		} else {
 			site.Flash(session, site.SuccessFlashKey, "You have been logged in")
 			session.Values["username"] = username
-			redirectAddr = "/"
+			if next != "" {
+				redirectAddr = next
+			} else {
+				redirectAddr = "/"
+			}
 			return
 		}
 	}
@@ -154,11 +165,6 @@ func userPasswordPost(w http.ResponseWriter, r *http.Request) {
 	site.Flash(session, site.SuccessFlashKey, "Password has been changed")
 }
 
-func UserFor(r *http.Request) *User {
-	user, _ := context.GetOk(r, UserKey)
-	return user.(*User)
-}
-
 // to be executed before each request to set some global variables that will be helpful in templates
 func userOnBeforeRequest(r *http.Request) {
 	session, err := site.Session(r)
@@ -180,7 +186,13 @@ func userOnBeforeRequest(r *http.Request) {
 }
 
 func addUser(r *http.Request, d *templates.Vars) {
-	(*d)["User"] = UserFor(r)
+	user := UserFor(r)
+	(*d)["User"] = user
+	if user != nil {
+		for i := range user.Roles {
+			(*d)["Role"+user.Roles[i]] = true
+		}
+	}
 }
 
 func init() {
@@ -198,12 +210,12 @@ func init() {
 		Methods("POST")
 	sr.HandleFunc("/logout", userLogoutGet).
 		Methods("GET")
-	sr.HandleFunc("/profile", userProfileGet).
+	sr.Handle("/profile", Authorize(userProfileGet)).
 		Methods("GET")
-	sr.HandleFunc("/profile", userProfilePost).
+	sr.Handle("/profile", Authorize(userProfilePost)).
 		Methods("POST")
-	sr.HandleFunc("/password", userPasswordGet).
+	sr.Handle("/password", Authorize(userPasswordGet)).
 		Methods("GET")
-	sr.HandleFunc("/password", userPasswordPost).
+	sr.Handle("/password", Authorize(userPasswordPost)).
 		Methods("POST")
 }
