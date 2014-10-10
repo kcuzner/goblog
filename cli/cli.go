@@ -7,8 +7,8 @@ import (
 	"os"
 	//"labix.org/v2/mgo"
 	"github.com/howeyc/gopass"
-	//"bitbucket.org/kcuzner/goblog/site/config"
-	"bitbucket.org/kcuzner/goblog/site"
+	//"github.com/kcuzner/goblog/site/config"
+	"github.com/kcuzner/goblog/site"
 )
 
 func main() {

@@ -1,9 +1,9 @@
 package main
 
 import (
-	_ "bitbucket.org/kcuzner/goblog/site"
-	_ "bitbucket.org/kcuzner/goblog/site/auth"
-	"bitbucket.org/kcuzner/goblog/site/config"
+	_ "github.com/kcuzner/goblog/site"
+	_ "github.com/kcuzner/goblog/site/auth"
+	"github.com/kcuzner/goblog/site/config"
 	"log"
 	"net/http"
 )

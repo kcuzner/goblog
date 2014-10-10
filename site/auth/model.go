@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"bitbucket.org/kcuzner/goblog/site/db"
+	"github.com/kcuzner/goblog/site/db"
 	"bytes"
 	"code.google.com/p/go.crypto/pbkdf2"
 	"crypto/rand"

@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"bitbucket.org/kcuzner/goblog/site"
+	"github.com/kcuzner/goblog/site"
 	"github.com/gorilla/context"
 	"log"
 	"net/http"

@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"bitbucket.org/kcuzner/goblog/site"
-	"bitbucket.org/kcuzner/goblog/site/db"
-	"bitbucket.org/kcuzner/goblog/site/templates"
+	"github.com/kcuzner/goblog/site"
+	"github.com/kcuzner/goblog/site/db"
+	"github.com/kcuzner/goblog/site/templates"
 	"github.com/gorilla/context"
 	"labix.org/v2/mgo/bson"
 	"log"

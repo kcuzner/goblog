@@ -1,8 +1,8 @@
 package site
 
 import (
-	"bitbucket.org/kcuzner/goblog/site/config"
-	"bitbucket.org/kcuzner/goblog/site/templates"
+	"github.com/kcuzner/goblog/site/config"
+	"github.com/kcuzner/goblog/site/templates"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"log"

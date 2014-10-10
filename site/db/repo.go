@@ -1,7 +1,7 @@
 package db
 
 import (
-	"bitbucket.org/kcuzner/goblog/site/config"
+	"github.com/kcuzner/goblog/site/config"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 )

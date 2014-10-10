@@ -1,7 +1,7 @@
 package site
 
 import (
-	"bitbucket.org/kcuzner/goblog/site/templates"
+	"github.com/kcuzner/goblog/site/templates"
 	"net/http"
 	"sort"
 )

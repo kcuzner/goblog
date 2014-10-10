@@ -1,7 +1,7 @@
 package templates
 
 import (
-	"bitbucket.org/kcuzner/goblog/site/config"
+	"github.com/kcuzner/goblog/site/config"
 	"errors"
 	"github.com/eknkc/amber"
 	"github.com/howeyc/fsnotify"
