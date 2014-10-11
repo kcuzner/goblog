@@ -11,14 +11,14 @@ import (
 
 func main() {
 	c := config.Config
-	
+
 	host := os.Getenv("IP")
 	port := os.Getenv("PORT")
-	
+
 	if host == "" {
 		host = "0.0.0.0"
 	}
-	
+
 	if port == "" {
 		port = "3000"
 	}
@@ -26,5 +26,5 @@ func main() {
 	http.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir(c.PublicDir))))
 
 	log.Println("Starting server on " + host + ":" + port)
-	log.Fatal(http.ListenAndServe(host + ":" + port, nil))
+	log.Fatal(http.ListenAndServe(host+":"+port, nil))
 }

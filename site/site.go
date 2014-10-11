@@ -1,10 +1,10 @@
 package site
 
 import (
-	"github.com/kcuzner/goblog/site/config"
-	"github.com/kcuzner/goblog/site/templates"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/kcuzner/goblog/site/config"
+	"github.com/kcuzner/goblog/site/templates"
 	"log"
 	"net/http"
 )

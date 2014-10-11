@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"github.com/kcuzner/goblog/site"
 	"github.com/gorilla/context"
+	"github.com/kcuzner/goblog/site"
 	"log"
 	"net/http"
 	"net/url"

@@ -1,12 +1,12 @@
 package auth
 
 import (
-	"github.com/kcuzner/goblog/site/db"
 	"bytes"
 	"code.google.com/p/go.crypto/pbkdf2"
 	"crypto/rand"
 	"crypto/sha512"
 	"errors"
+	"github.com/kcuzner/goblog/site/db"
 	"labix.org/v2/mgo/bson"
 )
 

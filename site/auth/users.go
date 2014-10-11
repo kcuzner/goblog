@@ -1,10 +1,10 @@
 package auth
 
 import (
+	"github.com/gorilla/context"
 	"github.com/kcuzner/goblog/site"
 	"github.com/kcuzner/goblog/site/db"
 	"github.com/kcuzner/goblog/site/templates"
-	"github.com/gorilla/context"
 	"labix.org/v2/mgo/bson"
 	"log"
 	"net/http"

@@ -1,10 +1,10 @@
 package templates
 
 import (
-	"github.com/kcuzner/goblog/site/config"
 	"errors"
 	"github.com/eknkc/amber"
 	"github.com/howeyc/fsnotify"
+	"github.com/kcuzner/goblog/site/config"
 	"html/template"
 	"log"
 	"path"
