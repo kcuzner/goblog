@@ -284,8 +284,55 @@ func feedIdGet(w http.ResponseWriter, r *http.Request) {
 	println("get one feed")
 }
 
-func feedPost(w http.ResponseWriter, r *http.Request) {
+type feedDTO struct {
+	Id string `json:id`
+	Title string `json:title`
+	Path string `json:path`
+}
 
+// creates or updates a feed
+func feedPost(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFor(r)
+	if !user.HasRole(NewPostRole) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	d := json.NewDecoder(r.Body)
+	e := json.NewEncoder(w)
+
+	var req feedDTO
+	if d.Decode(&req) != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var feed *Feed
+	if req.Id == "" {
+		feed = NewFeed(req.Path, req.Title)
+	} else {
+		if err := db.Current.Find(feed, bson.M{"_id": bson.ObjectIdHex(req.Id)}).One(&feed); err != nil {
+			if err != mgo.ErrNotFound {
+				println(err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			} else {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+		}
+	}
+
+	feed.Path = req.Path
+	feed.Title = req.Title
+
+	if _, err := db.Current.Upsert(feed); err != nil {
+		println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	e.Encode(feed)
 }
 
 // adds tag data to the template variables
@@ -312,7 +359,8 @@ func init() {
 		Methods("GET")
 	pr.Handle("/edit", auth.Authorize(editPostPost).HasRole(NewPostRole)).
 		Methods("POST").
-		Headers("X-Requested-With", "XMLHttpRequest")
+		Headers("X-Requested-With", "XMLHttpRequest",
+		"Content-Type", "application/json")
 	pr.HandleFunc("/tag/{tag}", tagGet).
 		Methods("GET")
 
@@ -323,5 +371,6 @@ func init() {
 		Methods("GET")
 	fr.Handle("/edit", auth.Authorize(feedPost).HasRole(NewPostRole)).
 		Methods("POST").
-		Headers("X-Requested-With", "XMLHttpRequest")
+		Headers("X-Requested-With", "XMLHttpRequest",
+		"Content-Type", "application/json")
 }
