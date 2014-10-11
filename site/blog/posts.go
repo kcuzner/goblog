@@ -2,11 +2,11 @@ package blog
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"github.com/kcuzner/goblog/site"
 	"github.com/kcuzner/goblog/site/auth"
 	"github.com/kcuzner/goblog/site/db"
 	"github.com/kcuzner/goblog/site/templates"
-	"github.com/gorilla/mux"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 	"net/http"

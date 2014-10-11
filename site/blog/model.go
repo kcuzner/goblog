@@ -1,10 +1,10 @@
 package blog
 
 import (
-	"github.com/kcuzner/goblog/site/db"
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/kcuzner/goblog/site/db"
 	"github.com/russross/blackfriday"
 	"html/template"
 	"labix.org/v2/mgo"
