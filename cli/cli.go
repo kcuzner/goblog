@@ -4,11 +4,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"os"
-	//"labix.org/v2/mgo"
 	"github.com/howeyc/gopass"
-	//"github.com/kcuzner/goblog/site/config"
-	"github.com/kcuzner/goblog/site"
+	"github.com/kcuzner/goblog/site/auth"
+	"labix.org/v2/mgo"
+	"os"
 )
 
 func main() {
@@ -20,15 +19,12 @@ func main() {
 	scanner.Scan()
 	username := scanner.Text()
 
-	repo := site.NewRepository()
-	defer repo.Close()
-
-	user, err := repo.Users().User(username)
-	if err != nil {
+	user, err := auth.GetUser(username)
+	if err != nil && err != mgo.ErrNotFound {
 		panic(err)
 	}
 
-	if user == nil {
+	if user == nil || err == mgo.ErrNotFound {
 		//create a new user
 		var password string
 		for {
@@ -40,10 +36,12 @@ func main() {
 			}
 			println("Passwords don't match")
 		}
+
 		fmt.Printf("Enter admin display name: ")
 		scanner.Scan()
 		displayName := scanner.Text()
-		user, err = repo.Users().Create(username, password, displayName)
+
+		user, err = auth.NewUser(username, password, displayName)
 		if err != nil {
 			panic(err)
 		}
