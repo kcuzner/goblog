@@ -4,6 +4,7 @@ import (
 	"github.com/kcuzner/goblog/site/config"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
+	"log"
 )
 
 type Model interface {
@@ -34,6 +35,7 @@ func requireSession() *mgo.Session {
 	if err != nil {
 		panic(err)
 	}
+	log.Println("Connected to mongodb")
 
 	return session
 }
