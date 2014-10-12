@@ -197,7 +197,6 @@ func addUser(r *http.Request, d *templates.Vars) {
 
 func init() {
 	templates.Register(addUser)
-	db.Register(&User{})
 	site.RegisterHookBefore(site.BeforeHookImpl{userOnBeforeRequest})
 
 	s := site.GetSite()

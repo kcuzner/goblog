@@ -1,0 +1,4 @@
+extends ../layout.amber
+
+block body
+    h2 User Administration
