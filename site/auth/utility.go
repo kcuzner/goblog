@@ -116,3 +116,15 @@ func (a authorizer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.fn(w, r)
 	}
 }
+
+var allRoles []Role
+
+// Registers a role globally
+func RegisterRole(role Role) {
+	allRoles = append(allRoles, role)
+}
+
+// Gets all globally registered roles
+func AllRoles() []Role {
+	return append([]Role{}, allRoles...)
+}

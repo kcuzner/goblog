@@ -3,6 +3,7 @@
         title #{SiteTitle}
         link[href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"][rel="stylesheet"]
         link[href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/flatly/bootstrap.min.css"][rel="stylesheet"]
+        link[href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css"][rel="stylesheet"]
         script[type="text/javascript"][src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"]
         script[type="text/javascript"][src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"]
     body
@@ -39,3 +40,32 @@
                 div.alert.alert-success #{$msg}
         div.container
             block body
+        script[type="text/javascript"][src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js"]
+        block scripts
+        script[type="text/javascript"]
+            define('jquery', function () { return jQuery; })
+
+            require.config({
+                baseUrl: '/public/js/app',
+                paths: {
+                    'ko': '//cdnjs.cloudflare.com/ajax/libs/knockout/3.1.0/knockout-min',
+                    'ko-bindings': '/public/js/lib/ko-bindings',
+                    '_': '//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash.min',
+                    'ko-amd-helpers': '/public/js/lib/knockout-amd-helpers.min',
+                    'text': '//cdnjs.cloudflare.com/ajax/libs/require-text/2.0.12/text.min',
+                    'moment': '//cdnjs.cloudflare.com/ajax/libs/moment.js/2.7.0/moment.min',
+                    'q': '//cdnjs.cloudflare.com/ajax/libs/q.js/1.0.1/q',
+                    '$-extensions': '/public/js/lib/jquery-extensions'
+                },
+                map: {
+                    '*': {
+                        'knockout': 'ko'
+                    }
+                }
+            })
+
+            require(['ko', 'ko-amd-helpers'], function (ko) {
+                ko.amdTemplateEngine.defaultPath = "/public/templates";
+
+                ko.applyBindings();
+            })

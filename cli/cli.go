@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/howeyc/gopass"
 	"github.com/kcuzner/goblog/site/auth"
+	"github.com/kcuzner/goblog/site/db"
 	"labix.org/v2/mgo"
 	"os"
 )
@@ -52,5 +53,8 @@ func main() {
 			panic(errors.New("Incorrect password"))
 		}
 	}
+	
+	user.AddRole(auth.AdministrateUsersRole)
+	db.Current.Upsert(user)
 
 }
