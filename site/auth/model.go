@@ -28,7 +28,7 @@ type (
 		Username    string        `json:"username" bson:"username"`
 		Password    []byte        `json:"password" bson:"password"`
 		Salt        []byte        `json:"salt" bson:"salt"`
-		DisplayName string        `json:"display_name" bson:"display_name"`
+		DisplayName string        `json:"displayName" bson:"display_name"`
 		Roles       []Role        `json:"roles" bson:"roles"`
 	}
 )

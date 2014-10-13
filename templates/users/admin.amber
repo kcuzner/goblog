@@ -2,3 +2,39 @@ extends ../layout.amber
 
 block body
     h2 User Administration
+    div.row[data-bind="module: 'views/user-admin', visible: true"][style=ModuleStyle]
+        div.col-sm-4
+            div.form-group.has-feedback
+                label Search
+                input.form-control[data-bind="value: search, valueUpdate: 'keyup'"]
+                span.glyphicon.glyphicon-search.form-control-feedback
+            p.text-center.text-muted[data-bind="visible: results() && !results().length"] No users found
+            p.text-center[data-bind="visible: loading"]
+                i.fa.fa-spin.fa-spinner
+            div.list-group[data-bind="foreach: results"]
+                a.list-group-item[href="javascript:;"][data-bind="click: $parent.select.bind($parent), text: username"]
+        div.col-sm-8
+            p.text-center.text-muted[data-bind="visible: !selected()"] No user selected
+            div[data-bind="with: selected"]
+                h4 Attributes
+                div.form-group
+                    label Username
+                    input.form-control[data-bind="value: username"][disabled]
+                div.form-group
+                    label Display Name
+                    input.form-control[data-bind="value: displayName"]
+                h4 Roles
+                ul.list-group[data-bind="foreach: $parent.allRoles"]
+                    li.list-group-item
+                        div.checkbox
+                            label
+                                input[type="checkbox"][data-bind="value: $data, checked: $parent.roles"]
+                                span[data-bind="text: $data"]
+                hr
+                button.btn.btn-success[type="button"][data-bind="enable: modified, click: save"]
+                    span.glyphicon.glyphicon-floppy-save
+                    | Save
+
+block scripts
+    script[type="text/javascript"]
+        var allRoles = #{AllRoles};
