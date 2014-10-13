@@ -16,13 +16,15 @@ import (
 )
 
 const (
-	NewPostRole auth.Role = "PostNew"
+	PostAnywhereRole auth.Role = "PostAnywhere"
+	EditFeedsRole = "EditFeeds"
 )
 
 func feedGet(path string, w http.ResponseWriter, r *http.Request) bool {
 	feed := new(Feed)
 	err := db.Current.Find(feed, bson.M{"path": path}).One(&feed)
 	if err != nil || feed == nil {
+		println("no feed", path)
 		return false
 	}
 
@@ -280,10 +282,6 @@ func feedsGet(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func feedIdGet(w http.ResponseWriter, r *http.Request) {
-	println("get one feed")
-}
-
 type feedDTO struct {
 	Id string `json:id`
 	Title string `json:title`
@@ -292,12 +290,6 @@ type feedDTO struct {
 
 // creates or updates a feed
 func feedPost(w http.ResponseWriter, r *http.Request) {
-	user := auth.UserFor(r)
-	if !user.HasRole(NewPostRole) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
 	d := json.NewDecoder(r.Body)
 	e := json.NewEncoder(w)
 
@@ -344,7 +336,8 @@ func addPostTags(r *http.Request, t *templates.Vars) {
 }
 
 func init() {
-	auth.RegisterRole(NewPostRole)
+	auth.RegisterRole(PostAnywhereRole)
+	auth.RegisterRole(EditFeedsRole)
 	
 	site.HandlePathFunc(feedGet)
 	site.HandlePathFunc(postGet)
@@ -353,11 +346,11 @@ func init() {
 
 	s := site.GetSite()
 	pr := s.Router().PathPrefix("/posts").Subrouter()
-	pr.Handle("/new", auth.Authorize(newPostGet).HasRole(NewPostRole)).
+	pr.Handle("/new", auth.Authorize(newPostGet).HasRole(PostAnywhereRole)).
 		Methods("GET")
-	pr.Handle("/edit/{id}", auth.Authorize(editPostGet).HasRole(NewPostRole)).
+	pr.Handle("/edit/{id}", auth.Authorize(editPostGet).HasRole(PostAnywhereRole)).
 		Methods("GET")
-	pr.Handle("/edit", auth.Authorize(editPostPost).HasRole(NewPostRole)).
+	pr.Handle("/edit", auth.Authorize(editPostPost).HasRole(PostAnywhereRole)).
 		Methods("POST").
 		Headers("X-Requested-With", "XMLHttpRequest",
 		"Content-Type", "application/json")
@@ -367,10 +360,8 @@ func init() {
 	s.Router().HandleFunc("/feeds", feedsGet).
 		Methods("GET")
 	fr := s.Router().PathPrefix("/feeds").Subrouter()
-	fr.HandleFunc("/feed/{id}", feedIdGet).
-		Methods("GET")
-	fr.Handle("/edit", auth.Authorize(feedPost).HasRole(NewPostRole)).
-		Methods("POST").
+	fr.Handle("/save", auth.Authorize(feedPost).HasRole(EditFeedsRole)).
+		Methods("POST", "PUT").
 		Headers("X-Requested-With", "XMLHttpRequest",
 		"Content-Type", "application/json")
 }

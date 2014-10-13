@@ -10,3 +10,9 @@ block main
         each $preview in $feed.Preview
             | #{$preview}
             br
+    hr
+    if User && RolePostAnywhere
+        div[data-bind="module: 'views/new-feed'"]
+            button.btn.btn-default[type="button"][data-bind="click: newFeed"]
+                span.glyphicon.glyphicon-plus
+                | New Feed

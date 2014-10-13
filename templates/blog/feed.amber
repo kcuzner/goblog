@@ -2,7 +2,7 @@ extends ../layout-sidebar.amber
 include mixins.amber
 
 block main
-    $canPost = User && RolePostNew && FeedId
+    $canPost = User && RolePostAnywhere && FeedId
     if $canPost
         div.pull-right
             a.btn.btn-primary[href="/posts/new?feed=" + FeedId]

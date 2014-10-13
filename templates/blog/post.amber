@@ -1,7 +1,7 @@
 extends ../layout-sidebar.amber
 
 block main
-    if User && RolePostNew
+    if User && RolePostAnywhere
         div.pull-right.btn-group
             a.btn.btn-default.btn-xs[href="/posts/edit/" + Post.Id.Hex]
                 span.glyphicon.glyphicon-edit
