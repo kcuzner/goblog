@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
+	"log"
 	"math"
 	"sort"
 	"time"
@@ -18,11 +19,12 @@ type (
 	Posts []Post
 	Post  struct {
 		Id       bson.ObjectId `json:"id" bson:"_id"`
-		Path     string        `json:"path" bson:"path"`
-		Versions []PostVersion `json:"versions" bson:"versions"`
-		Created  time.Time     `json:"created" bson:"created"`
-		Modified time.Time     `json:"modified" bson:"modified"`
-		Author   bson.ObjectId `json:"author" bson:"_author"`
+		Path     string        `json:"path" bson:"path"`         //current path to the post
+		Tags     []string      `json:"tags" bson:"tags"`         //current tags on the post
+		Versions []PostVersion `json:"versions" bson:"versions"` //sequential versions of this post (last is most recent)
+		Created  time.Time     `json:"created" bson:"created"`   //time this post was originally created
+		Modified time.Time     `json:"modified" bson:"modified"` //last modified time of this post
+		Author   bson.ObjectId `json:"author" bson:"_author"`    //author of this post
 		revision *PostVersion
 	}
 	PostVersion struct {
@@ -106,7 +108,9 @@ func (t tagCount) Less(i, j int) bool {
 // This, my friends, is why we are using mongo here
 var tagCountMapReduce = mgo.MapReduce{
 	Map: `function () {
-		if (!this.tags) { return; }
+		if (!this.tags) {
+			return
+		}
 		for(index in this.tags) {
 			emit(this.tags[index], 1);
 		}
@@ -182,7 +186,7 @@ func GetPostsByTag(tag string, page, size int) (Posts, error) {
 func (p Post) Collection() string  { return "posts" }
 func (p Post) Indexes() [][]string { return [][]string{[]string{"path"}} }
 func (p Post) Unique() bson.M      { return bson.M{"_id": p.Id} }
-func (p Post) PreSave() {
+func (p *Post) PreSave() {
 	if p.Versions == nil {
 		p.Versions = make([]PostVersion, 0)
 	}
@@ -190,6 +194,7 @@ func (p Post) PreSave() {
 	if p.revision != nil {
 		//we are being revised!
 		p.Versions = append(p.Versions, *p.revision)
+		p.Tags = p.revision.Tags
 		p.Path = p.revision.Path
 		p.revision = nil
 	}
@@ -241,7 +246,7 @@ func (p Post) CreatedString() string {
 }
 
 // Sets the current revision of this post
-func (p Post) SetRevision(v *PostVersion) {
+func (p *Post) SetRevision(v *PostVersion) {
 	p.revision = v
 }
 
@@ -368,11 +373,10 @@ func (f Feed) Preview() []string {
 	var posts Posts
 	err := db.Current.Find(post, bson.M{"_id": bson.M{"$in": previewIds}}).All(&posts)
 	if err != nil {
-		println(err.Error())
+		log.Println(err)
 	}
 
 	for i := range posts {
-		println("post", i)
 		previews = append(previews, posts[i].Title())
 	}
 

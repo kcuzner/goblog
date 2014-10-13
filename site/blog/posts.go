@@ -9,6 +9,7 @@ import (
 	"github.com/kcuzner/goblog/site/templates"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,14 +18,13 @@ import (
 
 const (
 	PostAnywhereRole auth.Role = "PostAnywhere"
-	EditFeedsRole = "EditFeeds"
+	EditFeedsRole              = "EditFeeds"
 )
 
 func feedGet(path string, w http.ResponseWriter, r *http.Request) bool {
 	feed := new(Feed)
 	err := db.Current.Find(feed, bson.M{"path": path}).One(&feed)
 	if err != nil || feed == nil {
-		println("no feed", path)
 		return false
 	}
 
@@ -103,7 +103,7 @@ func editPostGet(w http.ResponseWriter, r *http.Request) {
 	feeds, err := post.Feeds()
 	if err != nil {
 		//feed getting error?
-		println(err)
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -167,7 +167,7 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	var post Post
 	if err := db.Current.Find(post, bson.M{"_id": bson.ObjectIdHex(req.Id)}).One(&post); err != nil {
 		if err != mgo.ErrNotFound {
-			println(err.Error())
+			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		} else {
@@ -195,7 +195,7 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	}
 	existing, err := post.Feeds()
 	if err != nil {
-		println(err.Error())
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -212,7 +212,7 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	feed := new(Feed)
 	var feeds Feeds
 	if err := db.Current.Find(feed, bson.M{"_id": bson.M{"$in": feedIds}}).All(&feeds); err != nil {
-		println(err.Error())
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		e.Encode(editResponse{"Unable to load feeds", post.Id.Hex()})
 		return
@@ -224,15 +224,15 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 			(&feeds[i]).RemovePost(post.Id)
 		}
 		if _, err = db.Current.Upsert(feeds[i]); err != nil {
-			println(err.Error())
+			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			e.Encode(editResponse{"Unable to save feeds", post.Id.Hex()})
 			return
 		}
 	}
 
-	if _, err := db.Current.Upsert(post); err != nil {
-		println(err.Error())
+	if _, err := db.Current.Upsert(&post); err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		e.Encode(editResponse{"Unable to save post", post.Id.Hex()})
 		return
@@ -252,7 +252,7 @@ func tagGet(w http.ResponseWriter, r *http.Request) {
 
 	posts, err := GetPostsByTag(tag, 1, 20)
 	if err != nil {
-		println(err)
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -271,7 +271,7 @@ func tagGet(w http.ResponseWriter, r *http.Request) {
 func feedsGet(w http.ResponseWriter, r *http.Request) {
 	feeds, err := GetAllFeeds()
 	if err != nil {
-		println(err)
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -283,9 +283,9 @@ func feedsGet(w http.ResponseWriter, r *http.Request) {
 }
 
 type feedDTO struct {
-	Id string `json:id`
+	Id    string `json:id`
 	Title string `json:title`
-	Path string `json:path`
+	Path  string `json:path`
 }
 
 // creates or updates a feed
@@ -305,7 +305,7 @@ func feedPost(w http.ResponseWriter, r *http.Request) {
 	} else {
 		if err := db.Current.Find(feed, bson.M{"_id": bson.ObjectIdHex(req.Id)}).One(&feed); err != nil {
 			if err != mgo.ErrNotFound {
-				println(err.Error())
+				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			} else {
@@ -319,7 +319,7 @@ func feedPost(w http.ResponseWriter, r *http.Request) {
 	feed.Title = req.Title
 
 	if _, err := db.Current.Upsert(feed); err != nil {
-		println(err.Error())
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -338,7 +338,7 @@ func addPostTags(r *http.Request, t *templates.Vars) {
 func init() {
 	auth.RegisterRole(PostAnywhereRole)
 	auth.RegisterRole(EditFeedsRole)
-	
+
 	site.HandlePathFunc(feedGet)
 	site.HandlePathFunc(postGet)
 
