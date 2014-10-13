@@ -1,7 +1,7 @@
 extends ../layout-sidebar.amber
 
 block main
-    div[data-bind="module: { name: 'view/edit-post', data: dto }, visible: true"][style="display: none"]
+    div[data-bind="module: { name: 'views/edit-post', data: dto }, visible: true"][style="display: none"]
         div.pull-right
             i.fa.fa-2x.fa-spin.fa-spinner[data-bind="visible: working"]
         h3 New Post

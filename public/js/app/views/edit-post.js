@@ -1,7 +1,7 @@
 /**
  * New post javascript
  */
-define(['_', 'ko', 'moment', 'model/post', 'ko-bindings'], function (_, ko, moment, Post) {
+define(['_', 'ko', 'moment', 'models/post', 'ko-bindings'], function (_, ko, moment, Post) {
 
     function NewPostView(dto) {
         var self = this;
