@@ -136,18 +136,18 @@ func doPostEditor(post *Post, feeds []Feed, w http.ResponseWriter, r *http.Reque
 }
 
 type editDTO struct {
-	Id      string   `json:id`
-	Feeds   []string `json:feeds`
-	Title   string   `json:title`
-	Path    string   `json:path`
-	Parser  string   `json:parser`
-	Content string   `json:content`
-	Tags    string   `json:tags`
+	Id      string   `json:"id"`
+	Feeds   []string `json:"feeds"`
+	Title   string   `json:"title"`
+	Path    string   `json:"path`
+	Parser  string   `json:"parser"`
+	Content string   `json:"content"`
+	Tags    string   `json:"tags"`
 }
 
 type editResponse struct {
-	Error string `json:error`
-	Id    string `json:id`
+	Error string `json:"error"`
+	Post  Post   `json:"post"`
 }
 
 // Handles submission of the edit post form created by doPostEditor
@@ -179,6 +179,7 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	post.SetRevision(&PostVersion{
+		Created: time.Now(),
 		Path:    req.Path,
 		Title:   req.Title,
 		Content: req.Content,
@@ -214,7 +215,7 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	if err := db.Current.Find(feed, bson.M{"_id": bson.M{"$in": feedIds}}).All(&feeds); err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
-		e.Encode(editResponse{"Unable to load feeds", post.Id.Hex()})
+		e.Encode(editResponse{"Unable to load feeds", Post{}})
 		return
 	}
 	for i := range feeds {
@@ -226,7 +227,7 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 		if _, err = db.Current.Upsert(feeds[i]); err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
-			e.Encode(editResponse{"Unable to save feeds", post.Id.Hex()})
+			e.Encode(editResponse{"Unable to save feeds", Post{}})
 			return
 		}
 	}
@@ -234,9 +235,10 @@ func editPostPost(w http.ResponseWriter, r *http.Request) {
 	if _, err := db.Current.Upsert(&post); err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
-		e.Encode(editResponse{"Unable to save post", post.Id.Hex()})
+		e.Encode(editResponse{"Unable to save post", Post{}})
 		return
-	} else if err := e.Encode(editResponse{"", post.Id.Hex()}); err != nil {
+	} else if err := e.Encode(editResponse{"", post}); err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

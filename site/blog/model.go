@@ -28,11 +28,12 @@ type (
 		revision *PostVersion
 	}
 	PostVersion struct {
-		Path    string   `json:"path" bson:"path"`
-		Title   string   `json:"title" bson:"title"`
-		Content string   `json:"content" bson:"content"`
-		Parser  string   `json:"parser" bson:"parser"`
-		Tags    []string `json:"tags" bson:"tags"`
+		Created time.Time `json:"created" bson:"created"` //time this version was created
+		Path    string    `json:"path" bson:"path"`
+		Title   string    `json:"title" bson:"title"`
+		Content string    `json:"content" bson:"content"`
+		Parser  string    `json:"parser" bson:"parser"`
+		Tags    []string  `json:"tags" bson:"tags"`
 	}
 	FeedPost struct {
 		Id      bson.ObjectId `json:"id" bson:"_id"`
@@ -51,6 +52,7 @@ func NewPost(path, title, content, parser string, author bson.ObjectId) *Post {
 	post := new(Post)
 	post.Path = path
 	post.Versions = append(post.Versions, PostVersion{
+		Created: time.Now(),
 		Path:    path,
 		Title:   title,
 		Content: content,
@@ -246,8 +248,43 @@ func (p Post) CreatedString() string {
 }
 
 // Sets the current revision of this post
-func (p *Post) SetRevision(v *PostVersion) {
+// Returns true if the revision will be added
+func (p *Post) SetRevision(v *PostVersion) bool {
+	if (v.SameAs(p.Version())) {
+		return false
+	}
+	
 	p.revision = v
+	return true
+}
+
+// Compares this post version to another post version
+func (v PostVersion) SameAs(other PostVersion) bool {
+	//compare tags first
+	myTags := make(map[string]bool)
+	for i := range v.Tags {
+		myTags[v.Tags[i]] = true
+	}
+	
+	theirTags := make(map[string]bool)
+	for i := range other.Tags {
+		theirTags[other.Tags[i]] = true
+		if _, ok := myTags[other.Tags[i]]; !ok {
+			return false //they have a tag we don't
+		}
+	}
+	
+	for i := range v.Tags {
+		if _, ok := theirTags[v.Tags[i]]; !ok {
+			return false //we have a tag they don't
+		}
+	}
+	
+	//if we make it this far, compare the other properties
+	return v.Path == other.Path &&
+		v.Title == other.Title &&
+		v.Content == other.Content &&
+		v.Parser == other.Parser
 }
 
 func (p Posts) Len() int           { return len(p) }

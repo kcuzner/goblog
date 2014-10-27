@@ -1,7 +1,21 @@
 /**
  * Model for a post
  */
-define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
+define(['_', 'ko', 'q', 'moment', '$-extensions'], function (_, ko, Q, moment) {
+    
+    function PostVersion(dto) {
+        console.log(dto);
+        this.created = moment(dto.created);
+        this.path = dto.path;
+        this.title = dto.title;
+        this.content = dto.content;
+        this.parser = dto.parser;
+        this.tags = dto.tags;
+    }
+    
+    PostVersion.prototype.toString = function () {
+        return this.created.format('MMM D, YYYY hh:mm:ss A');
+    }
 
     function Post(dto) {
         var self = this;
@@ -13,8 +27,15 @@ define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
 
         this.created = moment(dto.created);
         this.modified = moment(dto.modified);
-
-        var version = dto.versions[dto.versions.length - 1] || {};
+        
+        this.versions = ko.observable(_.map(dto.versions, function (d) { return new PostVersion(d); }));
+        this.sortedVersions = ko.computed(function () {
+            return _(self.versions())
+                .sortBy(self.versions(), function (v) { return v.created.unix() })
+                .reverse()
+                .value();
+        });
+        var version = this.versions()[this.versions().length - 1] || {};
 
         this.title = ko.observable(version.title);
         this.path = ko.observable(version.path);
@@ -68,12 +89,29 @@ define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
             tags: this.tags()
         };
     };
+    
+    /**
+     * Updates a post from a DTO
+     */
+    Post.prototype.fromDTO = function (dto) {
+        this.id = dto.id;
+        this.feeds(dto.feeds);
+        
+        this.versions(_.map(dto.versions, function (d) { return new PostVersion(d); }));
+        var version = this.versions()[this.versions().length - 1] || {};
+        this.title(version.title);
+        this.path(version.path);
+        this.content(version.content);
+        this.parser(_.find(this.parsers, function (p) { return p.name === version.parser; }) || this.parsers[0]);
+        this.tags((version.tags || []).join(' '));
+    }
 
     /**
      * Saves a post
      * @return {Promise} Will be fulfilled when saving complete
      */
     Post.prototype.save = function() {
+        var self = this;
         var dto = this.toDTO();
 
         return $.ajaxQ({
@@ -81,6 +119,8 @@ define(['_', 'ko', 'q', '$-extensions'], function (_, ko, Q) {
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(dto)
+        }).then(function (dto) {
+            self.fromDTO(dto);
         });
     };
 
