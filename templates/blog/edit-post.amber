@@ -1,0 +1,48 @@
+extends ../layout-sidebar.amber
+
+block main
+    div[data-bind="module: { name: 'views/edit-post', data: dto }, visible: true"][style="display: none"]
+        div.pull-right
+            i.fa.fa-2x.fa-spin.fa-spinner[data-bind="visible: working"]
+        h3 New Post
+        div[data-bind="with: post"]
+            form[data-bind="submit: $parent.save.bind($parent)"]
+                div.form-group
+                    label Title
+                    input.form-control[type="text"][data-bind="value: title"]
+                div.form-group
+                    label Path
+                    input.form-control[type="text"][data-bind="value: path"]
+                div.form-group
+                    label Parser
+                    select.form-control[data-bind="options: parsers, optionsText: 'name', value: parser"]
+                div.form-group
+                    label Content
+                    div.new-post-editor[data-bind="ace: content, aceOptions: { 'mode': mode() }"]
+                    input[type="hidden"][data-bind="value: content"]
+                div.form-group
+                    label Feeds
+                    select.form-control[data-bind="options: $parent.feeds, optionsText: 'title', optionsValue: 'id', selectedOptions: feeds"][multiple]
+                div.form-group
+                    label Tags
+                    input.form-control[type="text"][data-bind="value: tags"][placeholder="Space separated tags"]
+                div.form-group[data-bind="visible: versions() && versions().length"]
+                    label History
+                    div.input-group
+                        select.form-control.input-sm[data-bind="options: sortedVersions"]
+                        span.input-group-btn
+                            button.btn.btn-sm.btn-warning[type="button"]
+                                i.fa.fa-refresh.fa-flip-horizontal
+                                | Revert
+                button.btn.btn-primary[type="submit"] Submit Post
+                button.btn.btn-warning[type="button"][data-bind="click: $parent.saveDraft.bind($parent)"] Save Draft
+                
+
+block script
+    script[type="text/javascript"][src="//cdnjs.cloudflare.com/ajax/libs/ace/1.1.3/ace.js"]
+    script[type="text/javascript"]
+        var dto = {
+            post: #{Post},
+            feeds: #{Feeds},
+            allFeeds: #{AllFeeds}
+        }

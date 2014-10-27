@@ -74,17 +74,33 @@ func RegisterHookAfter(hook AfterHook) {
 	afterHooks = append(afterHooks, hook)
 }
 
+type PathFunc func(path string, w http.ResponseWriter, r *http.Request) bool
+
+var pathFuncHandlers []PathFunc
+
+// Registers a function to attempt to handle any path
+// The function should return true if the page was handled
+func HandlePathFunc(f PathFunc) {
+	pathFuncHandlers = append(pathFuncHandlers, f)
+}
+
 // Processes the hooks for the passed writer/request combination
-func processHooks(w http.ResponseWriter, request *http.Request) {
+func processHooks(w http.ResponseWriter, r *http.Request) {
 	for i := range beforeHooks {
-		beforeHooks[i].Before(request)
+		beforeHooks[i].Before(r)
 	}
 
 	s := GetSite()
-	s.r.ServeHTTP(w, request)
+	for i := range pathFuncHandlers {
+		if pathFuncHandlers[i](r.URL.String(), w, r) {
+			goto handled
+		}
+	}
+	s.r.ServeHTTP(w, r)
 
+handled:
 	for i := range afterHooks {
-		afterHooks[i].After(request)
+		afterHooks[i].After(r)
 	}
 }
 

@@ -190,7 +190,7 @@ func addUser(r *http.Request, d *templates.Vars) {
 	(*d)["User"] = user
 	if user != nil {
 		for i := range user.Roles {
-			(*d)["Role"+user.Roles[i]] = true
+			(*d)["Role"+string(user.Roles[i])] = true
 		}
 	}
 }

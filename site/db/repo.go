@@ -35,7 +35,7 @@ func requireSession() *mgo.Session {
 	if err != nil {
 		panic(err)
 	}
-	log.Println("Connected to mongodb")
+	log.Println("MongoDB session started")
 
 	return session
 }

@@ -38,8 +38,6 @@ func AppendHandler(handler FrontPageHandler) {
 	frontPageHandlers = append(getHandlers(), handler)
 }
 
-//var defaultOptions = amber.Options{true, false}
-
 func init() {
 	s := GetSite()
 

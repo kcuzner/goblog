@@ -1,0 +1,18 @@
+extends ../layout-sidebar.amber
+
+block main
+    h2 All Feeds
+    each $feed in Feeds
+        h3
+            a[href=$feed.Path][target="_blank"] #{$feed.Title}
+        if $feed.Empty
+            p.text-center No Posts
+        each $preview in $feed.Preview
+            | #{$preview}
+            br
+    hr
+    if User && RolePostAnywhere
+        div[data-bind="module: 'views/new-feed'"]
+            button.btn.btn-default[type="button"][data-bind="click: newFeed"]
+                span.glyphicon.glyphicon-plus
+                | New Feed
